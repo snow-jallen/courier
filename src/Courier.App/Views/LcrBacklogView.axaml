@@ -1,0 +1,72 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Courier.App.ViewModels"
+             x:Class="Courier.App.Views.LcrBacklogView"
+             x:DataType="vm:LcrBacklogViewModel">
+
+  <StackPanel Margin="28,26,28,34">
+    <Grid ColumnDefinitions="*,Auto">
+      <StackPanel Grid.Column="0">
+        <TextBlock Classes="h2" Text="To enter in LCR"/>
+        <TextBlock Classes="lede" Margin="0,4,0,0"
+                   Text="Contact details people gave you that LCR does not have yet. Copy each one across, then tick it off — and if a later export turns up carrying it, Courier clears it from this list by itself."/>
+      </StackPanel>
+      <Button Grid.Column="1" Content="Copy all as a list" VerticalAlignment="Top"
+              Command="{Binding CopyAllCommand}" IsVisible="{Binding !IsEmpty}"/>
+    </Grid>
+
+    <Border Classes="card" Padding="0" Margin="0,18,0,0" ClipToBounds="True"
+            IsVisible="{Binding !IsEmpty}">
+      <StackPanel>
+        <Border Classes="header">
+          <Grid ColumnDefinitions="2*,1.4*,0.9*,2.2*,0.8*,Auto">
+            <TextBlock Grid.Column="0" Classes="colhead" Text="NAME"/>
+            <TextBlock Grid.Column="1" Classes="colhead" Text="WARD"/>
+            <TextBlock Grid.Column="2" Classes="colhead" Text="FIELD"/>
+            <TextBlock Grid.Column="3" Classes="colhead" Text="VALUE TO ENTER"/>
+            <TextBlock Grid.Column="4" Classes="colhead" Text="ADDED"/>
+            <TextBlock Grid.Column="5" Classes="colhead" Text="" Width="150"/>
+          </Grid>
+        </Border>
+        <ScrollViewer MaxHeight="440">
+          <ItemsControl ItemsSource="{Binding Rows}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:PendingRow">
+                <Border Classes="row">
+                  <Grid ColumnDefinitions="2*,1.4*,0.9*,2.2*,0.8*,Auto">
+                    <TextBlock Grid.Column="0" Text="{Binding PersonName}" FontWeight="SemiBold"
+                               Foreground="{DynamicResource Ink}" VerticalAlignment="Center"
+                               TextTrimming="CharacterEllipsis"/>
+                    <TextBlock Grid.Column="1" Text="{Binding Ward}" FontSize="12.5"
+                               Foreground="{DynamicResource Ink3}" VerticalAlignment="Center"/>
+                    <TextBlock Grid.Column="2" Text="{Binding KindLabel}" FontSize="12.5"
+                               Foreground="{DynamicResource Ink2}" VerticalAlignment="Center"/>
+                    <TextBlock Grid.Column="3" Text="{Binding Value}" Classes="mono"
+                               Foreground="{DynamicResource Ink}" VerticalAlignment="Center"
+                               TextTrimming="CharacterEllipsis"/>
+                    <TextBlock Grid.Column="4" Text="{Binding AddedOn}" Classes="mono"
+                               Foreground="{DynamicResource Ink3}" VerticalAlignment="Center"/>
+                    <StackPanel Grid.Column="5" Orientation="Horizontal" Spacing="6" Width="150">
+                      <Button Content="Copy" Padding="10,4" FontSize="12.5"
+                              Command="{Binding CopyCommand}"/>
+                      <Button Content="Entered" Padding="10,4" FontSize="12.5"
+                              Command="{Binding EnteredCommand}"/>
+                    </StackPanel>
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+      </StackPanel>
+    </Border>
+
+    <Border Classes="card" Padding="24,30" Margin="0,18,0,0" IsVisible="{Binding IsEmpty}">
+      <TextBlock Text="{Binding Summary}" HorizontalAlignment="Center"
+                 Foreground="{DynamicResource Ink3}"/>
+    </Border>
+
+    <TextBlock Text="{Binding Summary}" Margin="0,9,0,0" FontSize="12"
+               Foreground="{DynamicResource Ink3}" IsVisible="{Binding !IsEmpty}"/>
+  </StackPanel>
+</UserControl>

@@ -11,14 +11,26 @@
     <DataTemplate DataType="vm:ImportViewModel">
       <views:ImportView/>
     </DataTemplate>
-    <DataTemplate DataType="vm:ComingSoonViewModel">
-      <StackPanel Margin="28,26" Spacing="8">
-        <TextBlock Classes="h2" Text="{Binding Title}"/>
-        <TextBlock Classes="lede" Text="{Binding Note}"/>
-        <Border Classes="notice caution" Margin="0,14,0,0" HorizontalAlignment="Left">
-          <TextBlock Text="Not built yet." FontSize="12.5"
-                     Foreground="{DynamicResource Warn}" FontWeight="SemiBold"/>
+    <DataTemplate DataType="vm:PeopleViewModel">
+      <views:PeopleView/>
+    </DataTemplate>
+    <DataTemplate DataType="vm:SendViewModel">
+      <views:SendView/>
+    </DataTemplate>
+    <DataTemplate DataType="vm:LcrBacklogViewModel">
+      <views:LcrBacklogView/>
+    </DataTemplate>
+    <DataTemplate DataType="vm:SetupViewModel">
+      <views:SetupView/>
+    </DataTemplate>
+    <DataTemplate DataType="vm:ScreenFailedViewModel">
+      <StackPanel Margin="28,26" Spacing="10">
+        <TextBlock Classes="h2" Text="That screen could not be opened"/>
+        <Border Classes="notice privacy" HorizontalAlignment="Left">
+          <TextBlock Text="{Binding Message}" FontSize="12.5" TextWrapping="Wrap" MaxWidth="640"
+                     Foreground="{DynamicResource Ink2}"/>
         </Border>
+        <TextBlock Classes="lede" Text="Nothing has been changed. Try another screen, or restart Courier."/>
       </StackPanel>
     </DataTemplate>
   </Window.DataTemplates>

@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Courier.Core\Courier.Core.csproj" />
+    <ProjectReference Include="..\Courier.Messaging\Courier.Messaging.csproj" />
   </ItemGroup>
 
   <ItemGroup>

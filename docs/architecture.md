@@ -1,14 +1,17 @@
 # How Courier is put together
 
-    src/Courier.Core       pure logic: reading the PDF, normalising it, working out a diff
-    src/Courier.Data       EF Core entities, migrations, applying an import
-    src/Courier.Messaging  sending over each channel
+    src/Courier.Core       pure logic: reading the PDF, normalising it, diffing an
+                           import, and choosing who a message goes to
+    src/Courier.Messaging  sending over each channel, and the settings file
+    src/Courier.Data       EF Core entities, migrations, applying an import, sending
+                           a batch and writing down what happened
     src/Courier.App        Avalonia user interface
     tests/Courier.Tests    all of the tests
 
-`Core` depends on nothing but PdfPig. `Data` depends on `Core`. The UI depends on all
-three and nothing depends on the UI, so every rule below is testable without opening a
-window.
+`Core` depends on nothing but PdfPig. `Messaging` depends on `Core`. `Data` depends on
+both. Nothing depends on the UI, so every rule below is testable without opening a
+window — and the UI itself is tested headless, which is the only way a mistyped binding
+gets caught before a user finds it.
 
 ## Reading the report
 
@@ -79,6 +82,34 @@ The **To enter in LCR** report is every contact point that is `Local`, has never
 seen in an export, and has not been ticked off by hand. When a later export does carry
 that same value, the existing row is marked as seen rather than duplicated — so the
 backlog clears itself the moment the entry has actually been made.
+
+## Sending
+
+`Audience` turns the directory into a chosen set: filter, sort, and — the part that
+matters — **reachability**, which carries a reason rather than a bool. Someone who
+prefers e-mail and has no e-mail address is named on screen before the send, not
+dropped silently during it. The count on the Send button and the addresses the send
+uses come from that one calculation, so the screen cannot promise something the send
+does not keep.
+
+`BroadcastService` writes each delivery before attempting the next. A send that is
+interrupted half way therefore leaves an honest record: the messages already sent
+cannot be unsent, and the user has to be able to see which those were.
+
+Every sender turns its provider's failures into a sentence the user can act on. "535
+5.7.8" and "21610" tell the people this app is for exactly nothing; "Gmail needs an app
+password, here is where to make one" and "they replied STOP and must text START first"
+do. The tests assert the codes themselves never reach the screen.
+
+The voice channel plays a recording of the user, never text-to-speech. Courier rings
+them with inline TwiML that records them, Twilio keeps the recording, and the broadcast
+plays it back by its Twilio address. Passing TwiML inline when a call is created is
+what lets a desktop app place calls at all — the usual arrangement needs a public web
+server for Twilio to fetch instructions from, which this app has no business running.
+
+Credentials live in a JSON file beside the database, never inside it: they are not
+directory data and should not ride along in its backups. The file is owner-readable
+only, because unlike the directory a Twilio token can be used to spend money.
 
 ## Conventions
 

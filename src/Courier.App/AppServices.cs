@@ -17,9 +17,11 @@ public sealed class AppServices
         SettingsPath = Path.Combine(Path.GetDirectoryName(databasePath)!, "settings.json");
     }
 
-    public static AppServices Start()
+    /// <summary>The path is only ever passed in by tests; the app itself keeps the
+    /// directory where the user can find it.</summary>
+    public static AppServices Start(string? databasePath = null)
     {
-        var services = new AppServices(CourierDatabase.DefaultPath);
+        var services = new AppServices(databasePath ?? CourierDatabase.DefaultPath);
         using var db = CourierDatabase.Open(services.DatabasePath);
         db.Database.Migrate();
         return services;
@@ -37,4 +39,10 @@ public sealed class AppServices
 public interface IFilePicker
 {
     Task<string?> PickPdfAsync();
+}
+
+/// <summary>Same again for the clipboard, which lives on the window.</summary>
+public interface IClipboardWriter
+{
+    Task CopyAsync(string text);
 }

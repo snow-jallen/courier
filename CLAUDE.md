@@ -47,8 +47,16 @@ address, so "Working" means it actually worked.
 
 Pure logic lives in `Core` with tests. Views do not compute.
 
+## Sending
+
+- A provider's error code must never reach the screen. Translate it into what happened
+  and what to do. Tests assert the codes are absent; keep them.
+- Reachability carries a reason. Nobody is dropped from a send silently.
+- Each delivery is written down before the next is attempted, so an interrupted send
+  leaves an honest record.
+
 ## Before committing
 
-`dotnet test` — 50 tests, about a second. Warnings are errors.
+`dotnet test` — about 130 tests, a second or so. Warnings are errors.
 Small commits, one concern each, imperative subject with a `feat:`/`fix:`/`docs:`/
 `refactor:` prefix; the body explains why.

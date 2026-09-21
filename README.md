@@ -27,20 +27,25 @@ Built for one person on one computer, with no server and no account to sign into
 
 One self-contained executable per platform, with no runtime to install:
 
-    dotnet publish src/Courier.App -c Release -r osx-arm64  --self-contained
-    dotnet publish src/Courier.App -c Release -r win-x64    --self-contained
-    dotnet publish src/Courier.App -c Release -r linux-x64  --self-contained
+    dotnet publish src/Courier.App -c Release -r osx-arm64
+    dotnet publish src/Courier.App -c Release -r win-x64
+    dotnet publish src/Courier.App -c Release -r linux-x64
+
+Each produces a single compressed executable of about 55 MB in
+`src/Courier.App/bin/Release/net10.0/<platform>/publish/`. Double-click it; there is
+nothing to install first.
 
 ## Tests
 
     dotnet test
 
-Fifty tests, about a second. The suite never needs a real directory: the PDF reader
+About 130 tests, a second or so. The suite never needs a real directory: the PDF reader
 is tested against a synthetic report built in code with the same geometry as the real
-one. If you drop a genuine export at
+one. The window itself is tested headless, so a mistyped binding fails the build rather
+than the user. If you drop a genuine export at
 `tests/Courier.Tests/Fixtures/private/manti-singles.pdf` (gitignored), four extra
-tests run against it and check that every one of the 427 people comes back with a
-readable phone, e-mail, age, birthday and ward.
+tests run against it and check that every one of the 427 people — the number the report prints in its own
+footer — comes back with a readable phone, e-mail, age, birthday and ward.
 
 ## Privacy
 

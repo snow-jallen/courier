@@ -127,6 +127,66 @@
     <Setter Property="Foreground" Value="{DynamicResource Ink3}"/>
   </Style>
 
+  <!-- The three-way channel choice on each person's row -->
+  <Style Selector="Button.chip">
+    <Setter Property="Padding" Value="9,3"/>
+    <Setter Property="FontSize" Value="12"/>
+    <Setter Property="FontWeight" Value="SemiBold"/>
+    <Setter Property="CornerRadius" Value="0"/>
+    <Setter Property="Background" Value="{DynamicResource Surface}"/>
+    <Setter Property="Foreground" Value="{DynamicResource Ink3}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource Line}"/>
+  </Style>
+  <Style Selector="Button.chip.first"><Setter Property="CornerRadius" Value="7,0,0,7"/></Style>
+  <Style Selector="Button.chip.last"><Setter Property="CornerRadius" Value="0,7,7,0"/></Style>
+  <Style Selector="Button.chip.on.email">
+    <Setter Property="Background" Value="{DynamicResource ChEmail}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource ChEmail}"/>
+    <Setter Property="Foreground" Value="{DynamicResource OnAccent}"/>
+  </Style>
+  <Style Selector="Button.chip.on.text">
+    <Setter Property="Background" Value="{DynamicResource ChText}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource ChText}"/>
+    <Setter Property="Foreground" Value="#FFFFFF"/>
+  </Style>
+  <Style Selector="Button.chip.on.voice">
+    <Setter Property="Background" Value="{DynamicResource ChVoice}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource ChVoice}"/>
+    <Setter Property="Foreground" Value="#FFFFFF"/>
+  </Style>
+
+  <Style Selector="Border.row">
+    <Setter Property="BorderBrush" Value="{DynamicResource Line}"/>
+    <Setter Property="BorderThickness" Value="0,0,0,1"/>
+    <Setter Property="Padding" Value="14,7"/>
+  </Style>
+  <Style Selector="Border.header">
+    <Setter Property="Background" Value="{DynamicResource Surface2}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource Line}"/>
+    <Setter Property="BorderThickness" Value="0,0,0,1"/>
+    <Setter Property="Padding" Value="14,9"/>
+  </Style>
+  <Style Selector="Button.sortable">
+    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="BorderThickness" Value="0"/>
+    <Setter Property="Padding" Value="0"/>
+    <Setter Property="FontSize" Value="10.5"/>
+    <Setter Property="FontWeight" Value="SemiBold"/>
+    <Setter Property="Foreground" Value="{DynamicResource Ink3}"/>
+    <Setter Property="HorizontalAlignment" Value="Left"/>
+  </Style>
+  <Style Selector="Button.sortable:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="TextElement.Foreground" Value="{DynamicResource Ink}"/>
+  </Style>
+
+  <Style Selector="ComboBox">
+    <Setter Property="Background" Value="{DynamicResource Surface}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource Line}"/>
+    <Setter Property="CornerRadius" Value="7"/>
+    <Setter Property="MinHeight" Value="34"/>
+  </Style>
+
   <Style Selector="TextBox">
     <Setter Property="Background" Value="{DynamicResource Surface}"/>
     <Setter Property="Foreground" Value="{DynamicResource Ink}"/>
