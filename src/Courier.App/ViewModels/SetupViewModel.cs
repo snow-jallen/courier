@@ -120,13 +120,29 @@ public sealed partial class SetupViewModel : ObservableObject
     /// over from a Mac, opened on Windows or Linux.</summary>
     public bool TextRouteBlocked => TextVia == TextTransport.MacMessages && !IphoneRouteAvailable;
 
+    /// <summary>Calls always go through Twilio, so the account is needed even when
+    /// texts come from the user's own phone. Saying which of the two it is for stops
+    /// the credentials looking like leftovers from a route no longer in use.</summary>
+    public string TwilioPurpose => UseTwilioForText
+        ? "Used for your texts and your phone calls"
+        : "Used for phone calls — your texts go out from your own phone";
+
+    public string TestTextLabel => TextVia switch
+    {
+        TextTransport.MacMessages => "Text myself through Messages",
+        TextTransport.AndroidGateway => "Text myself through my phone",
+        _ => "Send myself a test text",
+    };
+
     public string TextRouteBlockedMessage =>
         "Texting from your iPhone needs Courier running on a Mac, because it works by asking the Messages app to send. "
         + "On this computer, choose Twilio, or your Android phone if you have one. Your iPhone setting is kept for when you are back on the Mac.";
 
     partial void OnTextViaChanged(TextTransport value)
     {
-        foreach (var name in (string[])["UseTwilioForText", "UseIphone", "UseAndroid", "TextRouteBlocked"])
+        foreach (var name in (string[])
+                 ["UseTwilioForText", "UseIphone", "UseAndroid", "TextRouteBlocked",
+                  "TwilioPurpose", "TestTextLabel"])
             OnPropertyChanged(name);
     }
 
@@ -151,7 +167,8 @@ public sealed partial class SetupViewModel : ObservableObject
 
     private static readonly string[] NotWorthRechecking =
         [nameof(IsDirty), nameof(SaveHint), nameof(EmailStatus), nameof(TwilioStatus),
-         nameof(BackupStatus), nameof(EmailBusy), nameof(TwilioBusy), nameof(EmailOk), nameof(TwilioOk)];
+         nameof(BackupStatus), nameof(EmailBusy), nameof(TwilioBusy), nameof(EmailOk), nameof(TwilioOk),
+         nameof(TwilioPurpose), nameof(TestTextLabel), nameof(TextRouteBlocked), nameof(HasRecording)];
 
     /// <summary>Any field changing can make the screen dirty, and there are a lot of
     /// fields. Watching them all in one place beats remembering to add each new one.</summary>

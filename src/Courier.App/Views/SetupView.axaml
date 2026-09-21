@@ -148,17 +148,17 @@
       </StackPanel>
     </Border>
 
-    <!-- Twilio -->
+    <!-- Twilio account: needed for calls always, and for texts unless a phone sends them -->
     <Border Classes="card" Margin="0,14,0,0" Padding="0">
       <StackPanel>
         <Border Background="{DynamicResource Surface2}" Padding="15,13"
                 BorderBrush="{DynamicResource Line}" BorderThickness="0,0,0,1">
           <Grid ColumnDefinitions="*,Auto">
             <StackPanel Grid.Column="0" Spacing="1">
-              <TextBlock Text="Text and voice" FontWeight="SemiBold" FontSize="14"
+              <TextBlock Text="Twilio account" FontWeight="SemiBold" FontSize="14"
                          Foreground="{DynamicResource Ink}"/>
-              <TextBlock Text="One Twilio account covers both — same keys, same phone number"
-                         FontSize="12" Foreground="{DynamicResource Ink3}"/>
+              <TextBlock Text="{Binding TwilioPurpose}" FontSize="12"
+                         Foreground="{DynamicResource Ink3}" TextWrapping="Wrap"/>
             </StackPanel>
             <Border Grid.Column="1" CornerRadius="20" Padding="10,4" VerticalAlignment="Center"
                     Background="{DynamicResource GoodSoft}" IsVisible="{Binding TwilioOk}">
@@ -168,57 +168,7 @@
           </Grid>
         </Border>
         <StackPanel Margin="15" Spacing="12">
-          <StackPanel Spacing="7">
-            <TextBlock Classes="eyebrow" Text="WHERE TEXTS GO OUT FROM"/>
-            <RadioButton GroupName="texttransport" IsChecked="{Binding UseTwilioForText}"
-                         Content="Through Twilio — reaches everyone, from a number they do not know"
-                         FontSize="13"/>
-            <RadioButton GroupName="texttransport" IsChecked="{Binding UseIphone}"
-                         IsEnabled="{Binding IphoneRouteAvailable}"
-                         Content="From my iPhone, through the Messages app on this Mac"
-                         FontSize="13"/>
-            <TextBlock FontSize="11.5" Margin="24,-4,0,0" Foreground="{DynamicResource Ink3}"
-                       TextWrapping="Wrap" IsVisible="{Binding !IphoneRouteAvailable}"
-                       Text="Only available on a Mac — the iPhone route works by asking the Messages app to send, and Messages exists nowhere else."/>
-            <Border Classes="notice privacy" IsVisible="{Binding TextRouteBlocked}">
-              <TextBlock Text="{Binding TextRouteBlockedMessage}" TextWrapping="Wrap"
-                         FontSize="12.5" Foreground="{DynamicResource Ink2}"/>
-            </Border>
-            <RadioButton GroupName="texttransport" IsChecked="{Binding UseAndroid}"
-                         Content="From my Android phone, through the SMS Gateway app"
-                         FontSize="13"/>
-
-            <Border Background="{DynamicResource WarnSoft}" CornerRadius="8" Padding="12,10"
-                    IsVisible="{Binding UseIphone}">
-              <TextBlock TextWrapping="Wrap" FontSize="12.5" Foreground="{DynamicResource Warn}"
-                         Text="This is how Phone Link works: the computer asks, your phone's line delivers. Free, and unmistakably from you. Messages must be open and signed in, your iPhone needs Text Message Forwarding switched on for this Mac, and the first send will ask macOS for permission to control Messages. Keep it to a few dozen at a time — a burst of hundreds from a personal line is what carriers throttle."/>
-            </Border>
-
-            <StackPanel Spacing="9" IsVisible="{Binding UseAndroid}">
-              <Border Background="{DynamicResource WarnSoft}" CornerRadius="8" Padding="12,10">
-                <TextBlock TextWrapping="Wrap" FontSize="12.5" Foreground="{DynamicResource Warn}"
-                           Text="Install SMS Gateway for Android on your phone, turn on Local Server, and press Offline to start it. The app then shows an address and a username and password — copy them here. The phone must be awake and on the same Wi-Fi as this computer. Keep it to a few dozen at a time, as above."/>
-              </Border>
-              <Grid ColumnDefinitions="*,*" ColumnSpacing="12" RowDefinitions="Auto,Auto" RowSpacing="10">
-                <StackPanel Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Spacing="6">
-                  <TextBlock Classes="eyebrow" Text="YOUR PHONE'S ADDRESS"/>
-                  <TextBox Text="{Binding GatewayUrl}" Classes="mono"
-                           PlaceholderText="http://192.168.1.44:8080"/>
-                </StackPanel>
-                <StackPanel Grid.Row="1" Grid.Column="0" Spacing="6">
-                  <TextBlock Classes="eyebrow" Text="USERNAME"/>
-                  <TextBox Text="{Binding GatewayUser}" Classes="mono"/>
-                </StackPanel>
-                <StackPanel Grid.Row="1" Grid.Column="1" Spacing="6">
-                  <TextBlock Classes="eyebrow" Text="PASSWORD"/>
-                  <TextBox Text="{Binding GatewayPassword}" PasswordChar="•"/>
-                </StackPanel>
-              </Grid>
-            </StackPanel>
-          </StackPanel>
-
-          <Grid ColumnDefinitions="*,*" ColumnSpacing="12" RowDefinitions="Auto,Auto" RowSpacing="12"
-                IsVisible="{Binding UseTwilioForText}">
+          <Grid ColumnDefinitions="*,*" ColumnSpacing="12" RowDefinitions="Auto,Auto" RowSpacing="12">
             <StackPanel Grid.Row="0" Grid.Column="0" Spacing="6">
               <TextBlock Classes="eyebrow" Text="ACCOUNT SID"/>
               <TextBox Text="{Binding AccountSid}" Classes="mono" PlaceholderText="AC…"/>
@@ -236,59 +186,142 @@
               <TextBox Text="{Binding TestNumber}" Classes="mono" PlaceholderText="+14355550164"/>
             </StackPanel>
           </Grid>
-
-          <StackPanel Spacing="6">
-            <Grid ColumnDefinitions="*,Auto">
-              <TextBlock Grid.Column="0" Classes="eyebrow" Text="MESSAGING SERVICE (OPTIONAL — TURNS TEXTS INTO RCS)"/>
-              <Border Grid.Column="1" CornerRadius="20" Padding="9,2" VerticalAlignment="Center"
-                      Background="{DynamicResource GoodSoft}" IsVisible="{Binding SendsRichText}">
-                <TextBlock Text="RCS on" FontSize="11" FontWeight="SemiBold"
-                           Foreground="{DynamicResource Good}"/>
-              </Border>
-            </Grid>
-            <TextBox Text="{Binding MessagingServiceSid}" Classes="mono" PlaceholderText="MG…"/>
-            <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource Ink3}"
-                       Text="Leave this empty and texts go out as ordinary SMS. Paste a Twilio Messaging Service that has an RCS sender on it, and phones that support RCS get a named sender with proper formatting instead of an unknown number — while everyone else still gets the same SMS as before. Nobody receives less than they do today, so there is nothing for anyone to choose."/>
-          </StackPanel>
-
-          <Border Background="{DynamicResource AccentSoft}" CornerRadius="8" Padding="12,10">
-            <TextBlock TextWrapping="Wrap" FontSize="12.5" Foreground="{DynamicResource AccentInk}"
-                       Text="Texting everyone costs a few dollars, plus about $1.15 a month for the number. Twilio bills only what you send. To check the setup without messaging anyone, use the Test credentials from your Twilio console and put +15005550006 as your own number — Twilio accepts it and delivers nothing."/>
-          </Border>
-
-          <Border Background="{DynamicResource Surface2}" CornerRadius="8" Padding="12,10"
-                  BorderBrush="{DynamicResource Line}" BorderThickness="1">
-            <TextBlock TextWrapping="Wrap" FontSize="12.5" Foreground="{DynamicResource Ink2}"
-                       Text="Texts cannot be sent from your own mobile number — carriers do not allow it, and Twilio will not either. Choose a Twilio number with your own area code so it looks local, and set that number to forward replies to your phone (Twilio console → the number → Messaging → a TwiML Bin). Calls are different: a verified caller ID shows your real number, so people see you ringing and can just call back."/>
-          </Border>
-
-          <Border Background="{DynamicResource ChVoiceSoft}" CornerRadius="8" Padding="12,10">
-            <StackPanel Spacing="8">
-              <TextBlock TextWrapping="Wrap" FontSize="12.5" Foreground="{DynamicResource ChVoice}"
-                         Text="People who prefer a call hear your own voice, not a robot. Courier rings you, you speak the message after the beep, and that recording is what plays."/>
-              <StackPanel Orientation="Horizontal" Spacing="9">
-                <Button Content="Record my message" Command="{Binding RecordVoiceCommand}"
-                        IsEnabled="{Binding !TwilioBusy}"/>
-                <Border CornerRadius="20" Padding="10,4" VerticalAlignment="Center"
-                        Background="{DynamicResource GoodSoft}" IsVisible="{Binding HasRecording}">
-                  <TextBlock Text="Recorded" FontSize="12" FontWeight="SemiBold"
-                             Foreground="{DynamicResource Good}"/>
-                </Border>
-              </StackPanel>
-            </StackPanel>
-          </Border>
-
-          <StackPanel Orientation="Horizontal" Spacing="9">
-            <Button Content="Send myself a test text" Command="{Binding TestTextCommand}"
-                    IsEnabled="{Binding !TwilioBusy}"/>
-            <Button Content="Call me and play the recording" Command="{Binding TestCallCommand}"
-                    IsEnabled="{Binding !TwilioBusy}"/>
-          </StackPanel>
           <TextBlock Text="{Binding TwilioStatus}" TextWrapping="Wrap" FontSize="12.5"
                      Foreground="{DynamicResource Ink2}"/>
         </StackPanel>
       </StackPanel>
     </Border>
+
+    <!-- Text messages -->
+    <Border Classes="card" Margin="0,14,0,0" Padding="0">
+      <StackPanel>
+        <Border Background="{DynamicResource Surface2}" Padding="15,13"
+                BorderBrush="{DynamicResource Line}" BorderThickness="0,0,0,1">
+          <StackPanel Spacing="1">
+            <TextBlock Text="Text messages" FontWeight="SemiBold" FontSize="14"
+                       Foreground="{DynamicResource Ink}"/>
+            <TextBlock Text="Through a service, or from your own phone" FontSize="12"
+                       Foreground="{DynamicResource Ink3}"/>
+          </StackPanel>
+        </Border>
+        <StackPanel Margin="15" Spacing="12">
+          <StackPanel Spacing="7">
+            <TextBlock Classes="eyebrow" Text="WHERE TEXTS GO OUT FROM"/>
+            <RadioButton GroupName="texttransport" IsChecked="{Binding UseTwilioForText}"
+                         Content="Through Twilio — reaches everyone, from a number they do not know"
+                         FontSize="13"/>
+            <RadioButton GroupName="texttransport" IsChecked="{Binding UseIphone}"
+                         IsEnabled="{Binding IphoneRouteAvailable}"
+                         Content="From my iPhone, through the Messages app on this Mac"
+                         FontSize="13"/>
+            <TextBlock FontSize="11.5" Margin="24,-4,0,0" Foreground="{DynamicResource Ink3}"
+                       TextWrapping="Wrap" IsVisible="{Binding !IphoneRouteAvailable}"
+                       Text="Only available on a Mac — the iPhone route works by asking the Messages app to send, and Messages exists nowhere else."/>
+            <RadioButton GroupName="texttransport" IsChecked="{Binding UseAndroid}"
+                         Content="From my Android phone, through the SMS Gateway app"
+                         FontSize="13"/>
+            <Border Classes="notice privacy" IsVisible="{Binding TextRouteBlocked}">
+              <TextBlock Text="{Binding TextRouteBlockedMessage}" TextWrapping="Wrap"
+                         FontSize="12.5" Foreground="{DynamicResource Ink2}"/>
+            </Border>
+          </StackPanel>
+
+          <!-- Twilio only -->
+          <StackPanel Spacing="12" IsVisible="{Binding UseTwilioForText}">
+            <Border Background="{DynamicResource AccentSoft}" CornerRadius="8" Padding="12,10">
+              <TextBlock TextWrapping="Wrap" FontSize="12.5" Foreground="{DynamicResource AccentInk}"
+                         Text="Texting everyone costs a few dollars, plus about $1.15 a month for the number. Twilio bills only what you send."/>
+            </Border>
+            <Border Background="{DynamicResource Surface2}" CornerRadius="8" Padding="12,10"
+                    BorderBrush="{DynamicResource Line}" BorderThickness="1">
+              <TextBlock TextWrapping="Wrap" FontSize="12.5" Foreground="{DynamicResource Ink2}"
+                         Text="A service cannot text from your own mobile number — carriers do not allow it. Choose a Twilio number in your area code so it reads as local, and set that number to forward replies to your phone. If you would rather messages genuinely came from your own number, pick one of the phone options above instead."/>
+            </Border>
+            <StackPanel Spacing="6">
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Grid.Column="0" Classes="eyebrow" Text="MESSAGING SERVICE (OPTIONAL — TURNS TEXTS INTO RCS)"/>
+                <Border Grid.Column="1" CornerRadius="20" Padding="9,2" VerticalAlignment="Center"
+                        Background="{DynamicResource GoodSoft}" IsVisible="{Binding SendsRichText}">
+                  <TextBlock Text="RCS on" FontSize="11" FontWeight="SemiBold"
+                             Foreground="{DynamicResource Good}"/>
+                </Border>
+              </Grid>
+              <TextBox Text="{Binding MessagingServiceSid}" Classes="mono" PlaceholderText="MG…"/>
+              <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource Ink3}"
+                         Text="Leave empty and texts go out as ordinary SMS. Paste a Twilio Messaging Service with an RCS sender on it and phones that support RCS get a named sender instead of an unknown number, while everyone else still gets the same SMS."/>
+            </StackPanel>
+          </StackPanel>
+
+          <!-- iPhone only -->
+          <Border Background="{DynamicResource WarnSoft}" CornerRadius="8" Padding="12,10"
+                  IsVisible="{Binding UseIphone}">
+            <TextBlock TextWrapping="Wrap" FontSize="12.5" Foreground="{DynamicResource Warn}"
+                       Text="This is how Phone Link works: the computer asks, your phone's line delivers. Free, and unmistakably from you — replies arrive in your own Messages app. Messages must be open and signed in, your iPhone needs Text Message Forwarding switched on for this Mac, and the first send will ask macOS for permission to control Messages. Keep it to a few dozen at a time; a burst of hundreds from a personal line is what carriers throttle."/>
+          </Border>
+
+          <!-- Android only -->
+          <StackPanel Spacing="9" IsVisible="{Binding UseAndroid}">
+            <Border Background="{DynamicResource WarnSoft}" CornerRadius="8" Padding="12,10">
+              <TextBlock TextWrapping="Wrap" FontSize="12.5" Foreground="{DynamicResource Warn}"
+                         Text="Install SMS Gateway for Android on your phone, turn on Local Server, and press Offline to start it. The app then shows an address and a username and password — copy them here. The phone must be awake and on the same Wi-Fi as this computer. Replies arrive in your own Messages app. Keep it to a few dozen at a time, as above."/>
+            </Border>
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="12" RowDefinitions="Auto,Auto" RowSpacing="10">
+              <StackPanel Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Spacing="6">
+                <TextBlock Classes="eyebrow" Text="YOUR PHONE'S ADDRESS"/>
+                <TextBox Text="{Binding GatewayUrl}" Classes="mono"
+                         PlaceholderText="http://192.168.1.44:8080"/>
+              </StackPanel>
+              <StackPanel Grid.Row="1" Grid.Column="0" Spacing="6">
+                <TextBlock Classes="eyebrow" Text="USERNAME"/>
+                <TextBox Text="{Binding GatewayUser}" Classes="mono"/>
+              </StackPanel>
+              <StackPanel Grid.Row="1" Grid.Column="1" Spacing="6">
+                <TextBlock Classes="eyebrow" Text="PASSWORD"/>
+                <TextBox Text="{Binding GatewayPassword}" PasswordChar="•"/>
+              </StackPanel>
+            </Grid>
+          </StackPanel>
+
+          <Button Content="{Binding TestTextLabel}" HorizontalAlignment="Left"
+                  Command="{Binding TestTextCommand}" IsEnabled="{Binding !TwilioBusy}"/>
+        </StackPanel>
+      </StackPanel>
+    </Border>
+
+    <!-- Phone calls -->
+    <Border Classes="card" Margin="0,14,0,0" Padding="0">
+      <StackPanel>
+        <Border Background="{DynamicResource Surface2}" Padding="15,13"
+                BorderBrush="{DynamicResource Line}" BorderThickness="0,0,0,1">
+          <Grid ColumnDefinitions="*,Auto">
+            <StackPanel Grid.Column="0" Spacing="1">
+              <TextBlock Text="Phone calls" FontWeight="SemiBold" FontSize="14"
+                         Foreground="{DynamicResource Ink}"/>
+              <TextBlock Text="Always through Twilio, playing a recording of your own voice"
+                         FontSize="12" Foreground="{DynamicResource Ink3}"/>
+            </StackPanel>
+            <Border Grid.Column="1" CornerRadius="20" Padding="10,4" VerticalAlignment="Center"
+                    Background="{DynamicResource GoodSoft}" IsVisible="{Binding HasRecording}">
+              <TextBlock Text="Recorded" FontSize="12" FontWeight="SemiBold"
+                         Foreground="{DynamicResource Good}"/>
+            </Border>
+          </Grid>
+        </Border>
+        <StackPanel Margin="15" Spacing="12">
+          <Border Background="{DynamicResource ChVoiceSoft}" CornerRadius="8" Padding="12,10">
+            <TextBlock TextWrapping="Wrap" FontSize="12.5" Foreground="{DynamicResource ChVoice}"
+                       Text="People who prefer a call hear your own voice, not a robot. Courier rings you, you speak the message after the beep, and that recording is what plays. Calls use the Twilio account above even when your texts come from your own phone — and a verified caller ID there makes them show your real number."/>
+          </Border>
+          <StackPanel Orientation="Horizontal" Spacing="9">
+            <Button Content="Record my message" Command="{Binding RecordVoiceCommand}"
+                    IsEnabled="{Binding !TwilioBusy}"/>
+            <Button Content="Call me and play it back" Command="{Binding TestCallCommand}"
+                    IsEnabled="{Binding !TwilioBusy}"/>
+          </StackPanel>
+        </StackPanel>
+      </StackPanel>
+    </Border>
+
 
     </StackPanel>
   </ScrollViewer>
