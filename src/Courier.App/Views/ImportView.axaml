@@ -1,0 +1,160 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Courier.App.ViewModels"
+             x:Class="Courier.App.Views.ImportView"
+             x:DataType="vm:ImportViewModel">
+
+  <StackPanel Margin="28,26,28,34" Spacing="0">
+
+    <TextBlock Classes="h2" Text="Import from LCR"/>
+    <TextBlock Classes="lede" Margin="0,4,0,0"
+               Text="Export the Single Adults report from LCR as a PDF, then open it here. Nothing is saved until you have looked over the changes."/>
+
+    <!-- The file is private. Say so where the file is actually being handled. -->
+    <Border Classes="notice privacy" Margin="0,16,0,0">
+      <StackPanel Orientation="Horizontal" Spacing="10">
+        <TextBlock Text="&#x1F512;" FontSize="14" VerticalAlignment="Top"/>
+        <TextBlock FontSize="12.5" TextWrapping="Wrap" MaxWidth="720"
+                   Foreground="{DynamicResource Ink2}"
+                   Text="This report is private. It carries home addresses, phone numbers and birthdays for hundreds of people. Once you have imported it, delete the PDF from your Downloads folder — Courier keeps its own copy of what it needs."/>
+      </StackPanel>
+    </Border>
+
+    <!-- Choose a file -->
+    <Border Classes="drop" Margin="0,18,0,0" IsVisible="{Binding !HasFile}">
+      <StackPanel Spacing="4" HorizontalAlignment="Center">
+        <TextBlock Text="Open your LCR report" FontSize="15" FontWeight="SemiBold"
+                   HorizontalAlignment="Center" Foreground="{DynamicResource Ink}"/>
+        <TextBlock Text="A PDF exported from Leader and Clerk Resources" FontSize="12.5"
+                   HorizontalAlignment="Center" Foreground="{DynamicResource Ink3}"/>
+        <Button Classes="primary" Content="Choose a PDF…" Margin="0,12,0,0"
+                HorizontalAlignment="Center"
+                Command="{Binding ChooseFileCommand}" IsEnabled="{Binding !Busy}"/>
+      </StackPanel>
+    </Border>
+
+    <!-- What this file would change -->
+    <StackPanel IsVisible="{Binding HasFile}" Spacing="0">
+      <Border Classes="card" Margin="0,18,0,0" Padding="16,14">
+        <StackPanel Spacing="3">
+          <TextBlock Text="{Binding FileName}" FontWeight="SemiBold" FontSize="14"
+                     Foreground="{DynamicResource Ink}"/>
+          <TextBlock Text="{Binding FileDetail}" Classes="mono"
+                     Foreground="{DynamicResource Ink3}"/>
+        </StackPanel>
+      </Border>
+
+      <TextBlock Classes="eyebrow" Text="WHAT THIS FILE WILL CHANGE" Margin="0,20,0,9"/>
+      <Border Classes="card" Padding="0">
+        <Grid ColumnDefinitions="*,*,*,*,*">
+          <StackPanel Grid.Column="0" Margin="15,12">
+            <TextBlock Text="{Binding InFile}" FontSize="23" FontWeight="Medium"
+                       Foreground="{DynamicResource Ink}"/>
+            <TextBlock Text="In the file" FontSize="11.5" Foreground="{DynamicResource Ink3}"/>
+          </StackPanel>
+          <StackPanel Grid.Column="1" Margin="15,12">
+            <TextBlock Text="{Binding Added}" FontSize="23" FontWeight="Medium"
+                       Foreground="{DynamicResource Good}"/>
+            <TextBlock Text="New people" FontSize="11.5" Foreground="{DynamicResource Ink3}"/>
+          </StackPanel>
+          <StackPanel Grid.Column="2" Margin="15,12">
+            <TextBlock Text="{Binding Updated}" FontSize="23" FontWeight="Medium"
+                       Foreground="{DynamicResource Warn}"/>
+            <TextBlock Text="Updated" FontSize="11.5" Foreground="{DynamicResource Ink3}"/>
+          </StackPanel>
+          <StackPanel Grid.Column="3" Margin="15,12">
+            <TextBlock Text="{Binding Deactivated}" FontSize="23" FontWeight="Medium"
+                       Foreground="{DynamicResource Crit}"/>
+            <TextBlock Text="No longer listed" FontSize="11.5" Foreground="{DynamicResource Ink3}"/>
+          </StackPanel>
+          <StackPanel Grid.Column="4" Margin="15,12">
+            <TextBlock Text="{Binding Unchanged}" FontSize="23" FontWeight="Medium"
+                       Foreground="{DynamicResource Ink}"/>
+            <TextBlock Text="Unchanged" FontSize="11.5" Foreground="{DynamicResource Ink3}"/>
+          </StackPanel>
+        </Grid>
+      </Border>
+
+      <ItemsControl ItemsSource="{Binding Warnings}" Margin="0,12,0,0">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate>
+            <Border Classes="notice caution" Margin="0,0,0,7">
+              <TextBlock Text="{Binding}" FontSize="12.5" TextWrapping="Wrap" MaxWidth="720"
+                         Foreground="{DynamicResource Warn}"/>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+
+      <TextBlock Classes="eyebrow" Text="REVIEW EACH CHANGE" Margin="0,20,0,9"/>
+      <Border Classes="card" Padding="0" ClipToBounds="True">
+        <StackPanel>
+          <Border Background="{DynamicResource Surface2}" BorderBrush="{DynamicResource Line}"
+                  BorderThickness="0,0,0,1" Padding="14,9">
+            <Grid ColumnDefinitions="110,220,150,*">
+              <TextBlock Grid.Column="0" Classes="colhead" Text="CHANGE"/>
+              <TextBlock Grid.Column="1" Classes="colhead" Text="NAME"/>
+              <TextBlock Grid.Column="2" Classes="colhead" Text="WARD"/>
+              <TextBlock Grid.Column="3" Classes="colhead" Text="WHAT'S DIFFERENT"/>
+            </Grid>
+          </Border>
+          <ScrollViewer MaxHeight="330">
+            <ItemsControl ItemsSource="{Binding Changes}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:ChangeRow">
+                  <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,0,0,1" Padding="14,8">
+                    <Grid ColumnDefinitions="110,220,150,*">
+                      <Panel Grid.Column="0" HorizontalAlignment="Left">
+                        <Border Background="{DynamicResource GoodSoft}" CornerRadius="20" Padding="8,2"
+                                IsVisible="{Binding IsAdded}">
+                          <TextBlock Text="New" FontSize="11.5" FontWeight="SemiBold"
+                                     Foreground="{DynamicResource Good}"/>
+                        </Border>
+                        <Border Background="{DynamicResource WarnSoft}" CornerRadius="20" Padding="8,2"
+                                IsVisible="{Binding IsUpdated}">
+                          <TextBlock Text="Updated" FontSize="11.5" FontWeight="SemiBold"
+                                     Foreground="{DynamicResource Warn}"/>
+                        </Border>
+                        <Border Background="{DynamicResource CritSoft}" CornerRadius="20" Padding="8,2"
+                                IsVisible="{Binding IsGone}">
+                          <TextBlock Text="Not listed" FontSize="11.5" FontWeight="SemiBold"
+                                     Foreground="{DynamicResource Crit}"/>
+                        </Border>
+                        <Border Background="{DynamicResource AccentSoft}" CornerRadius="20" Padding="8,2"
+                                IsVisible="{Binding IsBack}">
+                          <TextBlock Text="Back" FontSize="11.5" FontWeight="SemiBold"
+                                     Foreground="{DynamicResource AccentInk}"/>
+                        </Border>
+                      </Panel>
+                      <TextBlock Grid.Column="1" Text="{Binding Name}" FontWeight="SemiBold"
+                                 Foreground="{DynamicResource Ink}" TextTrimming="CharacterEllipsis"/>
+                      <TextBlock Grid.Column="2" Text="{Binding Ward}"
+                                 Foreground="{DynamicResource Ink3}" TextTrimming="CharacterEllipsis"/>
+                      <TextBlock Grid.Column="3" Text="{Binding Detail}" FontSize="12.5"
+                                 Foreground="{DynamicResource Ink2}" TextTrimming="CharacterEllipsis"/>
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+        </StackPanel>
+      </Border>
+
+      <TextBlock Text="People who drop out of the export are never deleted. They are marked inactive, hidden from sending, and restored automatically if they appear again."
+                 FontSize="11.5" Foreground="{DynamicResource Ink3}"
+                 TextWrapping="Wrap" MaxWidth="720" Margin="0,9,0,0"/>
+
+      <StackPanel Orientation="Horizontal" Spacing="9" Margin="0,18,0,0">
+        <Button Classes="primary" Content="Apply these changes"
+                Command="{Binding ApplyCommand}" IsEnabled="{Binding !Busy}"/>
+        <Button Content="Cancel" Command="{Binding CancelCommand}" IsEnabled="{Binding !Busy}"/>
+      </StackPanel>
+    </StackPanel>
+
+    <TextBlock Text="{Binding Status}" Margin="0,14,0,0" FontSize="12.5"
+               TextWrapping="Wrap" MaxWidth="720"
+               Foreground="{DynamicResource Ink2}"
+               IsVisible="{Binding Status, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+  </StackPanel>
+</UserControl>

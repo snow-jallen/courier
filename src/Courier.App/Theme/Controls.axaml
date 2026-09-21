@@ -1,0 +1,137 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!-- Headings -->
+  <Style Selector="TextBlock.h2">
+    <Setter Property="FontSize" Value="19"/>
+    <Setter Property="FontWeight" Value="SemiBold"/>
+    <Setter Property="Foreground" Value="{DynamicResource Ink}"/>
+  </Style>
+  <Style Selector="TextBlock.lede">
+    <Setter Property="FontSize" Value="13"/>
+    <Setter Property="Foreground" Value="{DynamicResource Ink3}"/>
+    <Setter Property="TextWrapping" Value="Wrap"/>
+    <Setter Property="MaxWidth" Value="560"/>
+  </Style>
+  <Style Selector="TextBlock.eyebrow">
+    <Setter Property="FontSize" Value="11"/>
+    <Setter Property="FontWeight" Value="SemiBold"/>
+    <Setter Property="Foreground" Value="{DynamicResource Ink3}"/>
+    <Setter Property="LetterSpacing" Value="1"/>
+  </Style>
+  <Style Selector="TextBlock.muted">
+    <Setter Property="Foreground" Value="{DynamicResource Ink3}"/>
+  </Style>
+  <Style Selector="TextBlock.mono">
+    <Setter Property="FontFamily" Value="Menlo,Consolas,monospace"/>
+    <Setter Property="FontSize" Value="12.5"/>
+  </Style>
+
+  <!-- Buttons -->
+  <Style Selector="Button">
+    <Setter Property="Background" Value="{DynamicResource Surface}"/>
+    <Setter Property="Foreground" Value="{DynamicResource Ink}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource Line2}"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="CornerRadius" Value="7"/>
+    <Setter Property="Padding" Value="14,8"/>
+    <Setter Property="FontSize" Value="13.5"/>
+    <Setter Property="FontWeight" Value="Medium"/>
+  </Style>
+  <Style Selector="Button:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Surface2}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource Ink3}"/>
+  </Style>
+  <Style Selector="Button.primary">
+    <Setter Property="Background" Value="{DynamicResource Accent}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource Accent}"/>
+    <Setter Property="Foreground" Value="{DynamicResource OnAccent}"/>
+    <Setter Property="FontWeight" Value="SemiBold"/>
+  </Style>
+  <Style Selector="Button.primary:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource AccentInk}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource AccentInk}"/>
+    <Setter Property="TextElement.Foreground" Value="{DynamicResource OnAccent}"/>
+  </Style>
+  <Style Selector="Button.quiet">
+    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="BorderBrush" Value="Transparent"/>
+    <Setter Property="Foreground" Value="{DynamicResource AccentInk}"/>
+  </Style>
+
+  <!-- Navigation rail -->
+  <Style Selector="RadioButton.nav">
+    <Setter Property="Foreground" Value="{DynamicResource Ink2}"/>
+    <Setter Property="FontSize" Value="13.5"/>
+    <Setter Property="FontWeight" Value="Medium"/>
+    <Setter Property="Padding" Value="10,8"/>
+    <Setter Property="HorizontalAlignment" Value="Stretch"/>
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Name="bg" Background="Transparent" CornerRadius="7" Padding="{TemplateBinding Padding}">
+          <ContentPresenter Content="{TemplateBinding Content}"
+                            VerticalAlignment="Center"
+                            TextElement.Foreground="{TemplateBinding Foreground}"
+                            TextElement.FontWeight="{TemplateBinding FontWeight}"/>
+        </Border>
+      </ControlTemplate>
+    </Setter>
+  </Style>
+  <Style Selector="RadioButton.nav:pointerover /template/ Border#bg">
+    <Setter Property="Background" Value="{DynamicResource Surface3}"/>
+  </Style>
+  <Style Selector="RadioButton.nav:checked /template/ Border#bg">
+    <Setter Property="Background" Value="{DynamicResource Surface}"/>
+  </Style>
+  <Style Selector="RadioButton.nav:checked">
+    <Setter Property="Foreground" Value="{DynamicResource Ink}"/>
+    <Setter Property="FontWeight" Value="SemiBold"/>
+  </Style>
+
+  <!-- Cards and surfaces -->
+  <Style Selector="Border.card">
+    <Setter Property="Background" Value="{DynamicResource Surface}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource Line}"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="CornerRadius" Value="9"/>
+  </Style>
+  <Style Selector="Border.drop">
+    <Setter Property="Background" Value="{DynamicResource Surface2}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource Line2}"/>
+    <Setter Property="BorderThickness" Value="1.5"/>
+    <Setter Property="CornerRadius" Value="10"/>
+    <Setter Property="Padding" Value="20,26"/>
+  </Style>
+
+  <!-- A notice with a severity stripe down its leading edge -->
+  <Style Selector="Border.notice">
+    <Setter Property="Background" Value="{DynamicResource Surface2}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource Line}"/>
+    <Setter Property="BorderThickness" Value="3,1,1,1"/>
+    <Setter Property="CornerRadius" Value="8"/>
+    <Setter Property="Padding" Value="13,10"/>
+  </Style>
+  <Style Selector="Border.notice.privacy">
+    <Setter Property="BorderBrush" Value="{DynamicResource Crit}"/>
+  </Style>
+  <Style Selector="Border.notice.caution">
+    <Setter Property="BorderBrush" Value="{DynamicResource Warn}"/>
+    <Setter Property="Background" Value="{DynamicResource WarnSoft}"/>
+  </Style>
+
+  <!-- Data grid-ish list -->
+  <Style Selector="TextBlock.colhead">
+    <Setter Property="FontSize" Value="10.5"/>
+    <Setter Property="FontWeight" Value="SemiBold"/>
+    <Setter Property="LetterSpacing" Value="0.8"/>
+    <Setter Property="Foreground" Value="{DynamicResource Ink3}"/>
+  </Style>
+
+  <Style Selector="TextBox">
+    <Setter Property="Background" Value="{DynamicResource Surface}"/>
+    <Setter Property="Foreground" Value="{DynamicResource Ink}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource Line}"/>
+    <Setter Property="CornerRadius" Value="7"/>
+    <Setter Property="Padding" Value="10,8"/>
+  </Style>
+</Styles>

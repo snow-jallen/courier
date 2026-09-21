@@ -1,0 +1,62 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <ResourceDictionary.ThemeDictionaries>
+
+    <ResourceDictionary x:Key="Light">
+      <SolidColorBrush x:Key="Ground"     Color="#F6F8F8"/>
+      <SolidColorBrush x:Key="Surface"    Color="#FFFFFF"/>
+      <SolidColorBrush x:Key="Surface2"   Color="#EDF1F1"/>
+      <SolidColorBrush x:Key="Surface3"   Color="#E3E9E9"/>
+      <SolidColorBrush x:Key="Ink"        Color="#11201F"/>
+      <SolidColorBrush x:Key="Ink2"       Color="#485A58"/>
+      <SolidColorBrush x:Key="Ink3"       Color="#7A8A88"/>
+      <SolidColorBrush x:Key="Line"       Color="#DBE2E1"/>
+      <SolidColorBrush x:Key="Line2"      Color="#C7D2D1"/>
+      <SolidColorBrush x:Key="Accent"     Color="#0E6F68"/>
+      <SolidColorBrush x:Key="AccentInk"  Color="#0B544E"/>
+      <SolidColorBrush x:Key="AccentSoft" Color="#DAEDEB"/>
+      <SolidColorBrush x:Key="OnAccent"   Color="#FFFFFF"/>
+      <SolidColorBrush x:Key="Good"       Color="#2C7A45"/>
+      <SolidColorBrush x:Key="GoodSoft"   Color="#DCEEE1"/>
+      <SolidColorBrush x:Key="Warn"       Color="#8F5E0C"/>
+      <SolidColorBrush x:Key="WarnSoft"   Color="#F6EAD3"/>
+      <SolidColorBrush x:Key="Crit"       Color="#A33A3A"/>
+      <SolidColorBrush x:Key="CritSoft"   Color="#F5DEDE"/>
+      <SolidColorBrush x:Key="ChEmail"    Color="#0E6F68"/>
+      <SolidColorBrush x:Key="ChEmailSoft" Color="#DAEDEB"/>
+      <SolidColorBrush x:Key="ChText"     Color="#3A56BE"/>
+      <SolidColorBrush x:Key="ChTextSoft" Color="#DFE4F8"/>
+      <SolidColorBrush x:Key="ChVoice"    Color="#A85219"/>
+      <SolidColorBrush x:Key="ChVoiceSoft" Color="#F6E3D4"/>
+    </ResourceDictionary>
+
+    <ResourceDictionary x:Key="Dark">
+      <SolidColorBrush x:Key="Ground"     Color="#0D1413"/>
+      <SolidColorBrush x:Key="Surface"    Color="#141D1C"/>
+      <SolidColorBrush x:Key="Surface2"   Color="#1B2524"/>
+      <SolidColorBrush x:Key="Surface3"   Color="#243030"/>
+      <SolidColorBrush x:Key="Ink"        Color="#E7EEED"/>
+      <SolidColorBrush x:Key="Ink2"       Color="#A6B5B3"/>
+      <SolidColorBrush x:Key="Ink3"       Color="#788785"/>
+      <SolidColorBrush x:Key="Line"       Color="#283433"/>
+      <SolidColorBrush x:Key="Line2"      Color="#364443"/>
+      <SolidColorBrush x:Key="Accent"     Color="#4FC7BC"/>
+      <SolidColorBrush x:Key="AccentInk"  Color="#7FDAD1"/>
+      <SolidColorBrush x:Key="AccentSoft" Color="#10322F"/>
+      <SolidColorBrush x:Key="OnAccent"   Color="#0D1413"/>
+      <SolidColorBrush x:Key="Good"       Color="#5CBB79"/>
+      <SolidColorBrush x:Key="GoodSoft"   Color="#12301D"/>
+      <SolidColorBrush x:Key="Warn"       Color="#D4A059"/>
+      <SolidColorBrush x:Key="WarnSoft"   Color="#332615"/>
+      <SolidColorBrush x:Key="Crit"       Color="#E08585"/>
+      <SolidColorBrush x:Key="CritSoft"   Color="#361B1B"/>
+      <SolidColorBrush x:Key="ChEmail"    Color="#4FC7BC"/>
+      <SolidColorBrush x:Key="ChEmailSoft" Color="#10322F"/>
+      <SolidColorBrush x:Key="ChText"     Color="#8FA6F2"/>
+      <SolidColorBrush x:Key="ChTextSoft" Color="#1A2246"/>
+      <SolidColorBrush x:Key="ChVoice"    Color="#E19464"/>
+      <SolidColorBrush x:Key="ChVoiceSoft" Color="#38210F"/>
+    </ResourceDictionary>
+
+  </ResourceDictionary.ThemeDictionaries>
+</ResourceDictionary>
