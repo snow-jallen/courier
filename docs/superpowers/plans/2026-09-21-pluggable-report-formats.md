@@ -21,9 +21,11 @@
 - **Commit style:** small commits, one concern each, imperative subject with a `feat:`/`fix:`/`docs:`/`refactor:`/`test:` prefix; the body explains why. End every commit message with:
 
 ```
-Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+Co-Authored-By: <the model that actually wrote the commit> <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_0162Q5wUzGeN3fyawg57oWSC
 ```
+
+The `Claude-Session` line is fixed and identical on every commit — it is what leads back to the conversation. The model name on `Co-Authored-By` is whatever your own attribution reminder gives you, because the line should name whoever did the work. Tasks on this plan run on different models, so `git log` will carry more than one name; that is accurate rather than a mistake, and it is not a review finding.
 
 - **User-facing copy is for people without a technical background.** Errors say what went wrong and what to do about it. A provider or library error code must never reach the screen.
 - **Views do not compute.** Any sentence shown to the user is composed in `Courier.Core`.
