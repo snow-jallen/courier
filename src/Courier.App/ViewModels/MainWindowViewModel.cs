@@ -1,4 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using Courier.Core.Diagnostics;
 using Courier.Messaging.Settings;
 
 namespace Courier.App.ViewModels;
@@ -49,7 +50,8 @@ public sealed partial class MainWindowViewModel : ObservableObject
         _setup = new SetupViewModel(
             _services, _store,
             databases: _picker as IDatabasePicker,
-            databaseChanged: OnDatabaseChanged);
+            databaseChanged: OnDatabaseChanged,
+            clipboard: _clipboard);
     }
 
     private void OnDatabaseChanged()
@@ -66,6 +68,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
 
     public void ShowImport()
     {
+        Log.Record("screen.open", Log.Details(("screen", "import")));
         RefreshSender();
         Current = _import;
     }
@@ -75,6 +78,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
     /// anything having to coordinate.</summary>
     public async Task ShowPeopleAsync()
     {
+        Log.Record("screen.open", Log.Details(("screen", "people")));
         RefreshSender();
         Current = _people;
         await _people.LoadAsync();
@@ -82,6 +86,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
 
     public async Task ShowSendAsync()
     {
+        Log.Record("screen.open", Log.Details(("screen", "send")));
         RefreshSender();
         Current = _send;
         await _send.LoadAsync();
@@ -89,6 +94,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
 
     public async Task ShowLcrAsync()
     {
+        Log.Record("screen.open", Log.Details(("screen", "lcr")));
         RefreshSender();
         Current = _lcr;
         await _lcr.LoadAsync();
@@ -96,12 +102,17 @@ public sealed partial class MainWindowViewModel : ObservableObject
 
     public async Task ShowHistoryAsync()
     {
+        Log.Record("screen.open", Log.Details(("screen", "history")));
         RefreshSender();
         Current = _history;
         await _history.LoadAsync();
     }
 
-    public void ShowSetup() => Current = _setup;
+    public void ShowSetup()
+    {
+        Log.Record("screen.open", Log.Details(("screen", "setup")));
+        Current = _setup;
+    }
 
     /// <summary>The rail names the person whose calling this serves, not an
     /// organisation: Courier augments an individual and should not look official.

@@ -61,6 +61,16 @@ Pure logic lives in `Core` with tests. Views do not compute.
 - Each delivery is written down before the next is attempted, so an interrupted send
   leaves an honest record.
 
+## Logging
+
+- `Log.Record` / `Log.Failure` from anywhere; the sink is set once at start-up.
+- **Nothing identifying goes in the log.** It exists to be sent to whoever is helping,
+  which makes it a copy of the directory unless it is deliberately not one. Names never;
+  addresses only through `Redact.Address`; provider messages only through
+  `Redact.Failure`, since they quote the address back; message bodies only as a length.
+  There is a test that a failed send leaks none of it — keep it.
+- Log what was done and what failed, not what was typed.
+
 ## Before committing
 
 `dotnet test` — about 130 tests, a second or so. Warnings are errors.

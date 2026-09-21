@@ -7,6 +7,7 @@ using Courier.Messaging.Settings;
 using Courier.Messaging.Android;
 using Courier.Messaging.Mac;
 using Courier.Messaging.Twilio;
+using Courier.Core.Diagnostics;
 using Courier.Core.Domain;
 using Courier.Data;
 
@@ -22,6 +23,7 @@ public sealed partial class SetupViewModel : ObservableObject
     /// <summary><paramref name="isMac"/> is only passed by tests; the app reads the
     /// platform it is actually running on.</summary>
     private readonly IDatabasePicker? _databases;
+    private readonly IClipboardWriter? _clipboard;
     private readonly Action? _databaseChanged;
 
     public SetupViewModel(
@@ -29,12 +31,15 @@ public sealed partial class SetupViewModel : ObservableObject
         ISettingsStore store,
         bool? isMac = null,
         IDatabasePicker? databases = null,
-        Action? databaseChanged = null)
+        Action? databaseChanged = null,
+        IClipboardWriter? clipboard = null)
     {
         _services = services;
         _store = store;
         _databases = databases;
         _databaseChanged = databaseChanged;
+        _clipboard = clipboard;
+        _logFolder = services.Activity.Folder;
         _isMac = isMac ?? OperatingSystem.IsMacOS();
 
         var settings = store.Load();
@@ -61,6 +66,31 @@ public sealed partial class SetupViewModel : ObservableObject
     [ObservableProperty] private string _databasePath;
     [ObservableProperty] private string _settingsPath;
     [ObservableProperty] private string _backupStatus = "";
+
+    // --- getting help --------------------------------------------------------------
+    [ObservableProperty] private string _logFolder;
+    [ObservableProperty] private string _logStatus = "";
+
+    public bool CanCopyLog => _clipboard is not null;
+
+    /// <summary>Puts the recent log on the clipboard to paste to whoever is helping.
+    /// It records what was done and what failed, never a name, a number or a word of
+    /// any message.</summary>
+    [RelayCommand]
+    private async Task CopyLogAsync()
+    {
+        if (_clipboard is null) return;
+        try
+        {
+            await _clipboard.CopyAsync(_services.Activity.Recent());
+            LogStatus = "Copied. Paste it into an email or a message to whoever is helping you.";
+            Log.Record("log.copied");
+        }
+        catch (Exception e)
+        {
+            LogStatus = $"The log could not be copied. {e.Message}";
+        }
+    }
 
     // --- who the messages are from ------------------------------------------------
     [ObservableProperty] private string _senderName;
@@ -228,6 +258,12 @@ public sealed partial class SetupViewModel : ObservableObject
     {
         _store.Save(Current);
         MarkSaved();
+
+        // What was filled in, never what was typed into it.
+        Log.Record("settings.save", Log.Details(
+            ("sender", Current.Sender.IsComplete), ("email", Current.Email.IsComplete),
+            ("twilio", Current.Twilio.IsComplete), ("textVia", TextVia.ToString()),
+            ("rcs", SendsRichText), ("androidGateway", Current.AndroidGateway.IsComplete)));
     }
 
     [RelayCommand]
@@ -243,6 +279,9 @@ public sealed partial class SetupViewModel : ObservableObject
             var check = await sender.TestAsync("");
             EmailOk = check.Ok;
             EmailStatus = check.Message;
+            Log.Record("test.email", Log.Details(
+                ("ok", check.Ok), ("host", Current.Email.Host),
+                ("result", Redact.Failure(check.Message))));
         }
         finally { EmailBusy = false; }
     }
@@ -266,6 +305,9 @@ public sealed partial class SetupViewModel : ObservableObject
                 TextVia == TextTransport.Twilio ? "" : TestNumber.Trim());
             TwilioOk = check.Ok;
             TwilioStatus = check.Message;
+            Log.Record("test.text", Log.Details(
+                ("ok", check.Ok), ("via", TextVia.ToString()),
+                ("rcs", SendsRichText), ("result", Redact.Failure(check.Message))));
         }
         finally { TwilioBusy = false; }
     }
@@ -318,6 +360,7 @@ public sealed partial class SetupViewModel : ObservableObject
         }
         catch (Exception e)
         {
+            Log.Failure("database.switch", e, Log.Details(("path", Redact.Path(path))));
             BackupStatus = $"That file could not be opened as a Courier directory, so nothing changed. {e.Message}";
             return;
         }

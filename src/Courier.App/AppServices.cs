@@ -1,3 +1,4 @@
+using Courier.Core.Diagnostics;
 using Courier.Data;
 using Courier.Messaging.Settings;
 using Microsoft.EntityFrameworkCore;
@@ -16,10 +17,16 @@ public sealed class AppServices
     /// database's location is recorded, so it cannot live beside it.</summary>
     public string SettingsPath { get; }
 
+    /// <summary>Kept beside the settings rather than the database, so opening a
+    /// different directory does not scatter the log across folders.</summary>
+    public JsonlActivityLog Activity { get; }
+
     private AppServices(string databasePath, string settingsPath)
     {
         DatabasePath = databasePath;
         SettingsPath = settingsPath;
+        Activity = new JsonlActivityLog(
+            Path.Combine(Path.GetDirectoryName(settingsPath) ?? ".", "logs"));
     }
 
     /// <summary>The paths are only ever passed in by tests; the app reads the database's
@@ -32,7 +39,21 @@ public sealed class AppServices
             ?? CourierDatabase.DefaultPath;
 
         var services = new AppServices(chosen, settings);
-        Prepare(chosen);
+        Log.UseForApp(services.Activity);
+
+        try
+        {
+            Prepare(chosen);
+        }
+        catch (Exception e)
+        {
+            Log.Failure("database.open", e, Log.Details(("path", Redact.Path(chosen))));
+            throw;
+        }
+
+        Log.Record("database.open", Log.Details(
+            ("path", Redact.Path(chosen)),
+            ("chosen", databasePath is null ? "settings" : "given")));
         return services;
     }
 
@@ -42,6 +63,7 @@ public sealed class AppServices
     {
         Prepare(path);
         DatabasePath = path;
+        Log.Record("database.switch", Log.Details(("path", Redact.Path(path))));
     }
 
     private static void Prepare(string path)
