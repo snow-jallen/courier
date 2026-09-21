@@ -55,6 +55,32 @@ public sealed class UserInterfaceTests : IDisposable
     }, _folder);
 
     [Fact]
+    public Task The_import_screen_shows_which_report_was_read() => InWindow((window, model) =>
+    {
+        model.ShowImport();
+        var import = (ImportViewModel)model.Current;
+        Assert.False(import.HasNotes);
+
+        // The notes strip lives inside the grid that only appears once a file is open.
+        import.HasFile = true;
+        import.Notes.Add("Read as Organizations and Callings. This report does not list " +
+                         "addresses and ages, so the ones already recorded are kept.");
+        Assert.True(import.HasNotes);
+
+        // Render it. A note that binds but never appears is the failure worth catching.
+        Dispatcher.UIThread.RunJobs();
+        window.Measure(window.ClientSize);
+        window.Arrange(new Rect(window.ClientSize));
+
+        Assert.Contains(
+            window.GetVisualDescendants().OfType<TextBlock>(),
+            t => t.Text is not null
+              && t.Text.Contains("Organizations and Callings", StringComparison.Ordinal));
+
+        return Task.CompletedTask;
+    }, _folder);
+
+    [Fact]
     public Task Every_screen_opens() => InWindow(async (_, model) =>
     {
         await model.ShowPeopleAsync();

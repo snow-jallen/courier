@@ -36,6 +36,8 @@ public sealed partial class ImportViewModel(AppServices services, IFilePicker pi
     public ObservableCollection<ChangeRow> Changes { get; } = [];
     public ObservableCollection<string> Warnings { get; } = [];
     public bool HasWarnings => Warnings.Count > 0;
+    public ObservableCollection<string> Notes { get; } = [];
+    public bool HasNotes => Notes.Count > 0;
 
     [RelayCommand]
     private async Task ChooseFileAsync()
@@ -52,6 +54,7 @@ public sealed partial class ImportViewModel(AppServices services, IFilePicker pi
         Status = "Reading the report…";
         Changes.Clear();
         Warnings.Clear();
+        Notes.Clear();
 
         try
         {
@@ -84,13 +87,16 @@ public sealed partial class ImportViewModel(AppServices services, IFilePicker pi
                     "Kept and marked inactive — nothing is deleted"));
 
             foreach (var w in plan.Warnings) Warnings.Add(w);
+            foreach (var n in plan.Notes) Notes.Add(n);
 
             Log.Record("import.read", Log.Details(
-                ("file", report.FileName), ("pages", report.PageCount), ("rows", report.Rows.Count),
+                ("file", report.FileName), ("format", report.Source.FormatName),
+                ("pages", report.PageCount), ("rows", report.Rows.Count),
                 ("added", plan.Added.Count), ("updated", plan.Updated.Count),
                 ("deactivated", plan.Deactivated.Count), ("reactivated", plan.Reactivated.Count),
                 ("unchanged", plan.Unchanged), ("warnings", plan.Warnings.Count)));
             OnPropertyChanged(nameof(HasWarnings));
+            OnPropertyChanged(nameof(HasNotes));
 
             Status = plan.Added.Count + plan.Updated.Count + plan.Deactivated.Count + plan.Reactivated.Count == 0
                 ? "Nothing in this file has changed since the last import."
@@ -135,7 +141,9 @@ public sealed partial class ImportViewModel(AppServices services, IFilePicker pi
             HasFile = false;
             Changes.Clear();
             Warnings.Clear();
+            Notes.Clear();
             OnPropertyChanged(nameof(HasWarnings));
+            OnPropertyChanged(nameof(HasNotes));
             _report = null;
             _plan = null;
         }
@@ -157,7 +165,9 @@ public sealed partial class ImportViewModel(AppServices services, IFilePicker pi
         HasFile = false;
         Changes.Clear();
         Warnings.Clear();
+        Notes.Clear();
         OnPropertyChanged(nameof(HasWarnings));
+        OnPropertyChanged(nameof(HasNotes));
         Status = "";
         _report = null;
         _plan = null;

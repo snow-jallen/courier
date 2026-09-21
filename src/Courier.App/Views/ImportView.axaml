@@ -9,7 +9,7 @@
 
     <TextBlock Classes="h2" Text="Import from LCR"/>
     <TextBlock Classes="lede" Margin="0,4,0,0"
-               Text="Export the Single Adults report from LCR as a PDF, then open it here. Nothing is saved until you have looked over the changes."/>
+               Text="Export the Single Adults report, or the Organizations and Callings report, from LCR as a PDF and open it here. Courier works out which one it is. Nothing is saved until you have looked over the changes."/>
 
     <!-- The file is private. Say so where the file is actually being handled. -->
     <Border Classes="notice privacy" Margin="0,16,0,0">
@@ -37,7 +37,7 @@
     </StackPanel>
 
     <!-- What this file would change -->
-    <Grid Grid.Row="1" IsVisible="{Binding HasFile}" RowDefinitions="Auto,Auto,Auto,Auto,*,Auto,Auto">
+    <Grid Grid.Row="1" IsVisible="{Binding HasFile}" RowDefinitions="Auto,Auto,Auto,Auto,Auto,*,Auto,Auto">
       <Border Grid.Row="0" Classes="card" Margin="0,18,0,0" Padding="16,14">
         <StackPanel Spacing="3">
           <TextBlock Text="{Binding FileName}" FontWeight="SemiBold" FontSize="14"
@@ -78,7 +78,20 @@
         </Grid>
       </Border>
 
-      <ItemsControl Grid.Row="3" ItemsSource="{Binding Warnings}" Margin="0,12,0,0">
+      <!-- Which report this is, and what it does not carry. Not a warning: nothing
+           is wrong, and it must not be dressed as though something is. -->
+      <ItemsControl Grid.Row="3" ItemsSource="{Binding Notes}" Margin="0,12,0,0">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate>
+            <Border Classes="notice" Margin="0,0,0,7">
+              <TextBlock Text="{Binding}" FontSize="12.5" TextWrapping="Wrap" MaxWidth="720"
+                         Foreground="{DynamicResource Ink2}"/>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+
+      <ItemsControl Grid.Row="4" ItemsSource="{Binding Warnings}" Margin="0,12,0,0">
         <ItemsControl.ItemTemplate>
           <DataTemplate>
             <Border Classes="notice caution" Margin="0,0,0,7">
@@ -89,7 +102,7 @@
         </ItemsControl.ItemTemplate>
       </ItemsControl>
 
-      <Border Grid.Row="4" Classes="card" Padding="0" ClipToBounds="True" Margin="0,20,0,0">
+      <Border Grid.Row="5" Classes="card" Padding="0" ClipToBounds="True" Margin="0,20,0,0">
         <Grid RowDefinitions="Auto,Auto,*">
           <TextBlock Grid.Row="0" Classes="eyebrow" Text="REVIEW EACH CHANGE" Margin="14,12,14,8"/>
           <Border Grid.Row="1" Background="{DynamicResource Surface2}" BorderBrush="{DynamicResource Line}"
@@ -145,11 +158,11 @@
         </Grid>
       </Border>
 
-      <TextBlock Grid.Row="5" Text="People who drop out of the export are never deleted. They are marked inactive, hidden from sending, and restored automatically if they appear again."
+      <TextBlock Grid.Row="6" Text="People who drop out of the export are never deleted. They are marked inactive, hidden from sending, and restored automatically if they appear again."
                  FontSize="11.5" Foreground="{DynamicResource Ink3}"
                  TextWrapping="Wrap" MaxWidth="720" Margin="0,9,0,0"/>
 
-      <StackPanel Grid.Row="6" Orientation="Horizontal" Spacing="9" Margin="0,18,0,0">
+      <StackPanel Grid.Row="7" Orientation="Horizontal" Spacing="9" Margin="0,18,0,0">
         <Button Classes="primary" Content="Apply these changes"
                 Command="{Binding ApplyCommand}" IsEnabled="{Binding !Busy}"/>
         <Button Content="Cancel" Command="{Binding CancelCommand}" IsEnabled="{Binding !Busy}"/>
