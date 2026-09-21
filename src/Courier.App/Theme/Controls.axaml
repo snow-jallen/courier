@@ -180,6 +180,22 @@
     <Setter Property="TextElement.Foreground" Value="{DynamicResource Ink}"/>
   </Style>
 
+  <!-- A message in the history list -->
+  <Style Selector="Button.sentrow">
+    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource Line}"/>
+    <Setter Property="BorderThickness" Value="0,0,0,1"/>
+    <Setter Property="CornerRadius" Value="0"/>
+    <Setter Property="Padding" Value="14,11"/>
+    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+  </Style>
+  <Style Selector="Button.sentrow:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Surface2}"/>
+  </Style>
+  <Style Selector="Button.sentrow.on /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource AccentSoft}"/>
+  </Style>
+
   <Style Selector="ComboBox">
     <Setter Property="Background" Value="{DynamicResource Surface}"/>
     <Setter Property="BorderBrush" Value="{DynamicResource Line}"/>

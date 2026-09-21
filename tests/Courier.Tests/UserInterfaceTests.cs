@@ -66,6 +66,9 @@ public sealed class UserInterfaceTests : IDisposable
         await model.ShowLcrAsync();
         Assert.IsType<LcrBacklogViewModel>(model.Current);
 
+        await model.ShowHistoryAsync();
+        Assert.IsType<HistoryViewModel>(model.Current);
+
         model.ShowSetup();
         Assert.IsType<SetupViewModel>(model.Current);
 
@@ -440,6 +443,19 @@ public sealed class UserInterfaceTests : IDisposable
             Assert.False(send.HasRecording);
             Assert.Contains("recording was cleared", send.VoiceStatus, StringComparison.Ordinal);
             await Task.CompletedTask;
+        }, _folder);
+
+    [Fact]
+    public Task The_history_screen_says_so_plainly_before_anything_has_been_sent() =>
+        InWindow(async (_, model) =>
+        {
+            await model.ShowHistoryAsync();
+            var history = (HistoryViewModel)model.Current;
+
+            Assert.True(history.IsEmpty);
+            Assert.Empty(history.Batches);
+            Assert.False(history.HasSelection);
+            Assert.Contains("Nothing has been sent yet", history.Summary, StringComparison.Ordinal);
         }, _folder);
 
     public void Dispose()
