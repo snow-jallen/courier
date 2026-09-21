@@ -12,12 +12,14 @@ Built for one person on one computer, with no server and no account to sign into
    reads it, compares it against what it already holds, and shows exactly what would
    change before anything is written. People who drop out of an export are marked
    inactive, never deleted.
-2. **Keep.** Add contact details LCR doesn't have. They survive every future import,
-   and they show up on a **To enter in LCR** list so someone can put them back into
-   the official record — a list that clears itself once an export shows the detail
-   has been entered.
+2. **Keep.** Correct anyone's email, phone or address on the People screen. Courier
+   never writes over what the export said — it records the correction, which is what
+   makes it survive every future import and what puts it on the **To enter in LCR**
+   list, so the official record can catch up. That list clears itself once an export
+   comes back carrying the detail.
 3. **Send.** Write a message once. It goes out by e-mail, text, or a recording played
-   over a phone call, split by what each person chose.
+   over a phone call, split by what each person chose — or all one way, when something
+   is urgent enough to text everybody.
 
 ## Setting it up
 
@@ -68,7 +70,19 @@ because each message really is its own message.
 
 ### Can the texts come from your own number?
 
-**Calls: yes.** Verify your mobile in the Twilio console as a caller ID and outgoing
+**On a Mac, yes — through the Messages app.** Setup can send texts by asking Messages to
+send them, which is how Phone Link works on Windows: the computer asks, the phone's own
+line delivers. Messages then genuinely come from your number and replies arrive in your
+own Messages app. Messages must be open and signed in, your iPhone needs Text Message
+Forwarding switched on for that Mac, and macOS will ask once for permission to control
+Messages.
+
+The catch is that a personal line is meant for person-to-person texting. A burst of
+hundreds is exactly what carrier spam systems look for, and it goes out at about one
+message every two seconds. **Keep it to a few dozen** — a ward, a committee, the people
+who did not reply — and use Twilio for the whole directory.
+
+**Through a service, no.** Verify your mobile in the Twilio console as a caller ID and outgoing
 calls show *your* number. People see you ringing, and returning the call reaches you
 directly.
 

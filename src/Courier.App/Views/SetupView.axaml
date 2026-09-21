@@ -165,7 +165,23 @@
           </Grid>
         </Border>
         <StackPanel Margin="15" Spacing="12">
-          <Grid ColumnDefinitions="*,*" ColumnSpacing="12" RowDefinitions="Auto,Auto" RowSpacing="12">
+          <StackPanel Spacing="7" IsVisible="{Binding MacMessagesAvailable}">
+            <TextBlock Classes="eyebrow" Text="WHERE TEXTS GO OUT FROM"/>
+            <RadioButton GroupName="texttransport" IsChecked="{Binding UseTwilioForText}"
+                         Content="Through Twilio — reaches everyone, from a number they do not know"
+                         FontSize="13"/>
+            <RadioButton GroupName="texttransport" IsChecked="{Binding UseMacMessages}"
+                         Content="From the Messages app on this Mac — your own number, replies come back to you"
+                         FontSize="13"/>
+            <Border Background="{DynamicResource WarnSoft}" CornerRadius="8" Padding="12,10"
+                    IsVisible="{Binding UseMacMessages}">
+              <TextBlock TextWrapping="Wrap" FontSize="12.5" Foreground="{DynamicResource Warn}"
+                         Text="This is how Phone Link works: the Mac asks, your phone's line delivers. It is free and unmistakably from you — but a personal line is meant for person-to-person texting, and a burst of hundreds is exactly what carriers throttle. Keep it to a few dozen at a time and use Twilio for the whole directory. Messages must be open and signed in, your iPhone must have Text Message Forwarding switched on for this Mac, and the first send will ask macOS for permission to control Messages."/>
+            </Border>
+          </StackPanel>
+
+          <Grid ColumnDefinitions="*,*" ColumnSpacing="12" RowDefinitions="Auto,Auto" RowSpacing="12"
+                IsVisible="{Binding UseTwilioForText}">
             <StackPanel Grid.Row="0" Grid.Column="0" Spacing="6">
               <TextBlock Classes="eyebrow" Text="ACCOUNT SID"/>
               <TextBox Text="{Binding AccountSid}" Classes="mono" PlaceholderText="AC…"/>

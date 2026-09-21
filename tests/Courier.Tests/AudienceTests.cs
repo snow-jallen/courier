@@ -196,6 +196,40 @@ public sealed class AudienceTests
     // ---- the summary above the Send button -------------------------------------
 
     [Fact]
+    public void Overriding_the_channel_reaches_people_who_never_chose_one()
+    {
+        var people = new[]
+        {
+            Person("Never", "A", channel: Channel.None),
+            Person("Mail", "B", channel: Channel.Email),
+        };
+
+        // Nobody is reachable on their own preference; both are by text.
+        Assert.Equal(1, Audience.Summarise(people).WillReceive);
+        Assert.Equal(2, Audience.Summarise(people, Channel.Text).WillReceive);
+        Assert.Equal(2, Audience.Summarise(people, Channel.Text).Count(Channel.Text));
+    }
+
+    [Fact]
+    public void Overriding_to_a_channel_someone_has_no_address_for_still_says_so()
+    {
+        var people = new[] { Person("NoEmail", "A", channel: Channel.Text, email: null) };
+
+        Assert.Equal(1, Audience.Summarise(people).WillReceive);
+
+        var forced = Audience.Summarise(people, Channel.Email);
+        Assert.Equal(0, forced.WillReceive);
+        Assert.Equal(UnreachableReason.MissingAddress, Assert.Single(forced.Unreachable).Why.Reason);
+    }
+
+    [Fact]
+    public void An_override_still_cannot_reach_somebody_who_has_left_the_directory()
+    {
+        var gone = Person("Gone", "A", channel: Channel.Email, active: false);
+        Assert.Equal(UnreachableReason.NotInDirectory, gone.ReachabilityVia(Channel.Text).Reason);
+    }
+
+    [Fact]
     public void The_summary_counts_each_channel_and_names_who_gets_nothing()
     {
         var people = new[]

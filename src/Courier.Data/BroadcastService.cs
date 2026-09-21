@@ -22,6 +22,7 @@ public sealed class BroadcastService(CourierDbContext db, IReadOnlyDictionary<Ch
         string audienceDescription,
         IReadOnlyList<Recipient> chosen,
         IProgress<BroadcastProgress>? progress = null,
+        Channel? via = null,
         CancellationToken cancellation = default)
     {
         var batch = new MessageBatch
@@ -38,7 +39,7 @@ public sealed class BroadcastService(CourierDbContext db, IReadOnlyDictionary<Ch
         {
             cancellation.ThrowIfCancellationRequested();
 
-            var reach = person.Reachability;
+            var reach = via is { } channel ? person.ReachabilityVia(channel) : person.Reachability;
             var delivery = new MessageDelivery
             {
                 MessageBatchId = batch.Id,

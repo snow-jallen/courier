@@ -37,12 +37,19 @@
     <!-- Selection bar + list -->
     <Border Grid.Row="2" Background="{DynamicResource AccentSoft}" CornerRadius="9,9,0,0" Padding="13,9"
             BorderBrush="{DynamicResource Line}" BorderThickness="1,1,1,0">
-      <Grid ColumnDefinitions="Auto,Auto,*,Auto">
+      <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto">
         <Button Grid.Column="0" Content="Select all" Padding="10,3" FontSize="12.5"
                 Command="{Binding SelectAllCommand}"/>
         <Button Grid.Column="1" Content="Clear selection" Padding="10,3" FontSize="12.5"
                 Margin="7,0,0,0" Command="{Binding SelectNoneCommand}"/>
-        <TextBlock Grid.Column="3" Text="{Binding SelectedLine}" FontWeight="SemiBold"
+        <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="7" Margin="0,0,14,0"
+                    VerticalAlignment="Center">
+          <TextBlock Text="Send" VerticalAlignment="Center" FontSize="12.5"
+                     Foreground="{DynamicResource AccentInk}"/>
+          <ComboBox MinWidth="200" ItemsSource="{Binding SendViaOptions}"
+                    SelectedItem="{Binding SendVia}"/>
+        </StackPanel>
+        <TextBlock Grid.Column="4" Text="{Binding SelectedLine}" FontWeight="SemiBold"
                    VerticalAlignment="Center" Foreground="{DynamicResource AccentInk}"/>
       </Grid>
     </Border>
@@ -71,7 +78,7 @@
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="vm:SendRow">
                 <Border Classes="row">
-                  <Grid ColumnDefinitions="36,2*,1.4*,0.5*,0.8*,0.8*,2*">
+                  <Grid ColumnDefinitions="36,2*,1.4*,0.5*,0.8*,Auto,2*">
                     <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected}" VerticalAlignment="Center"/>
                     <TextBlock Grid.Column="1" Text="{Binding Name}" FontWeight="SemiBold"
                                Foreground="{DynamicResource Ink}" VerticalAlignment="Center"
@@ -83,28 +90,14 @@
                                Foreground="{DynamicResource Ink2}" VerticalAlignment="Center"/>
                     <TextBlock Grid.Column="4" Text="{Binding Birthday}" Classes="mono"
                                Foreground="{DynamicResource Ink3}" VerticalAlignment="Center"/>
-                    <Panel Grid.Column="5" HorizontalAlignment="Left" VerticalAlignment="Center">
-                      <Border CornerRadius="20" Padding="8,2" Background="{DynamicResource ChEmailSoft}"
-                              IsVisible="{Binding IsEmail}">
-                        <TextBlock Text="Email" FontSize="11.5" FontWeight="SemiBold"
-                                   Foreground="{DynamicResource ChEmail}"/>
-                      </Border>
-                      <Border CornerRadius="20" Padding="8,2" Background="{DynamicResource ChTextSoft}"
-                              IsVisible="{Binding IsText}">
-                        <TextBlock Text="Text" FontSize="11.5" FontWeight="SemiBold"
-                                   Foreground="{DynamicResource ChText}"/>
-                      </Border>
-                      <Border CornerRadius="20" Padding="8,2" Background="{DynamicResource ChVoiceSoft}"
-                              IsVisible="{Binding IsVoice}">
-                        <TextBlock Text="Voice" FontSize="11.5" FontWeight="SemiBold"
-                                   Foreground="{DynamicResource ChVoice}"/>
-                      </Border>
-                      <Border CornerRadius="20" Padding="8,2" Background="{DynamicResource Surface3}"
-                              IsVisible="{Binding NoChannel}">
-                        <TextBlock Text="Not set" FontSize="11.5" FontWeight="SemiBold"
-                                   Foreground="{DynamicResource Ink3}"/>
-                      </Border>
-                    </Panel>
+                    <StackPanel Grid.Column="5" Orientation="Horizontal" VerticalAlignment="Center">
+                      <Button Classes="chip first email" Classes.on="{Binding IsEmail}"
+                              Content="Email" Command="{Binding ChooseEmailCommand}"/>
+                      <Button Classes="chip text" Classes.on="{Binding IsText}"
+                              Content="Text" Command="{Binding ChooseTextCommand}"/>
+                      <Button Classes="chip last voice" Classes.on="{Binding IsVoice}"
+                              Content="Voice" Command="{Binding ChooseVoiceCommand}"/>
+                    </StackPanel>
                     <StackPanel Grid.Column="6" Orientation="Horizontal" Spacing="5"
                                 VerticalAlignment="Center">
                       <TextBlock Text="&#x26A0;" FontSize="12" IsVisible="{Binding !CanReceive}"

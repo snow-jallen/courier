@@ -1,6 +1,14 @@
 namespace Courier.Data.Entities;
 
-public enum ContactKind { Email = 1, Phone = 2 }
+public enum ContactKind
+{
+    Email = 1,
+    Phone = 2,
+
+    /// <summary>A postal address. Not something Courier sends to, but something people
+    /// correct — and therefore something to put back into LCR.</summary>
+    Address = 3,
+}
 
 public enum ContactSource
 {

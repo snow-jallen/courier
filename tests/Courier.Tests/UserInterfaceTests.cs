@@ -141,6 +141,22 @@ public sealed class UserInterfaceTests : IDisposable
             Assert.Equal("JONATHAN ALLEN, STAKE SINGLES REPRESENTATIVE", model.SenderLabel);
         }, _folder);
 
+    /// <summary>Seeds one person so the list screens have something to show.</summary>
+    private static async Task<Guid> SeedOneAsync(AppServices services)
+    {
+        await using var db = services.Db();
+        var person = new Courier.Data.Entities.Person
+        {
+            LastName = "Ashgrove", FirstName = "Adelaide", DisplayName = "Ashgrove, Adelaide",
+            Ward = "Manti 2nd Ward", Age = 40, BirthMonth = 3, BirthDay = 4,
+            LcrEmail = "a.ashgrove@example.com", LcrPhone = "(435) 555-0111",
+            FirstSeenOn = new DateOnly(2026, 9, 16), LastSeenOn = new DateOnly(2026, 9, 16),
+        };
+        db.People.Add(person);
+        await db.SaveChangesAsync();
+        return person.Id;
+    }
+
     private static ScrollViewer Scroller(Window window, string name) =>
         window.GetVisualDescendants().OfType<ScrollViewer>().Single(s => s.Name == name);
 
@@ -210,6 +226,62 @@ public sealed class UserInterfaceTests : IDisposable
             Assert.NotEmpty(scrollers);
             Assert.Contains(scrollers, s => s.Extent.Height > s.Viewport.Height);
             return Task.CompletedTask;
+        }, _folder);
+
+    [Fact]
+    public Task A_person_can_be_corrected_and_the_correction_reaches_the_lcr_list() =>
+        InWindow(async (_, model) =>
+        {
+            await SeedOneAsync(AppServices.Start(Path.Combine(_folder, "contacts.db")));
+
+            await model.ShowPeopleAsync();
+            var people = (PeopleViewModel)model.Current;
+            var row = Assert.Single(people.Rows);
+
+            Assert.Null(people.Editing);
+            row.EditCommand.Execute(null);
+            var editor = Assert.IsType<PersonEditor>(people.Editing);
+            Assert.Equal("Ashgrove, Adelaide", editor.Name);
+            Assert.Equal("a.ashgrove@example.com", editor.Email);
+
+            editor.Email = "adelaide.new@example.com";
+            await editor.SaveCommand.ExecuteAsync(null);
+
+            Assert.Null(people.Editing);
+            Assert.Contains("waiting to be entered in LCR", people.EditStatus, StringComparison.Ordinal);
+            Assert.Equal("adelaide.new@example.com", Assert.Single(people.Rows).Person.Email);
+
+            // The correction is what the LCR screen lists.
+            await model.ShowLcrAsync();
+            var lcr = (LcrBacklogViewModel)model.Current;
+            Assert.Equal("adelaide.new@example.com", Assert.Single(lcr.Rows).Value);
+        }, _folder);
+
+    [Fact]
+    public Task Choosing_a_channel_for_everyone_overrides_what_each_person_picked() =>
+        InWindow(async (_, model) =>
+        {
+            await SeedOneAsync(AppServices.Start(Path.Combine(_folder, "contacts.db")));
+
+            await model.ShowSendAsync();
+            var send = (SendViewModel)model.Current;
+            var row = Assert.Single(send.Rows);
+
+            // Nobody has chosen a channel, so nobody can be reached.
+            Assert.Equal("Send to 0 people", send.SendLabel);
+            Assert.True(send.AnyUnreachable);
+
+            send.SendVia = "Everyone by text";
+            Assert.Equal("Send to 1 person", send.SendLabel);
+            Assert.Equal(1, send.TextCount);
+            Assert.False(send.AnyUnreachable);
+
+            // Or set it on the row, which sticks for next time.
+            send.SendVia = SendViewModel.EachPersonsChoice;
+            await row.ChooseEmailCommand.ExecuteAsync(null);
+            Assert.Equal(Courier.Core.Domain.Channel.Email, row.Channel);
+            Assert.Equal(1, send.EmailCount);
+            Assert.Equal("Send to 1 person", send.SendLabel);
         }, _folder);
 
     public void Dispose()
