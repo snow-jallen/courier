@@ -4,7 +4,8 @@
              x:Class="Courier.App.Views.ImportView"
              x:DataType="vm:ImportViewModel">
 
-  <StackPanel Margin="28,26,28,34" Spacing="0">
+  <Grid Margin="28,26,28,24" RowDefinitions="Auto,*,Auto">
+    <StackPanel Grid.Row="0">
 
     <TextBlock Classes="h2" Text="Import from LCR"/>
     <TextBlock Classes="lede" Margin="0,4,0,0"
@@ -33,9 +34,11 @@
       </StackPanel>
     </Border>
 
+    </StackPanel>
+
     <!-- What this file would change -->
-    <StackPanel IsVisible="{Binding HasFile}" Spacing="0">
-      <Border Classes="card" Margin="0,18,0,0" Padding="16,14">
+    <Grid Grid.Row="1" IsVisible="{Binding HasFile}" RowDefinitions="Auto,Auto,Auto,Auto,*,Auto,Auto">
+      <Border Grid.Row="0" Classes="card" Margin="0,18,0,0" Padding="16,14">
         <StackPanel Spacing="3">
           <TextBlock Text="{Binding FileName}" FontWeight="SemiBold" FontSize="14"
                      Foreground="{DynamicResource Ink}"/>
@@ -44,8 +47,8 @@
         </StackPanel>
       </Border>
 
-      <TextBlock Classes="eyebrow" Text="WHAT THIS FILE WILL CHANGE" Margin="0,20,0,9"/>
-      <Border Classes="card" Padding="0">
+      <TextBlock Grid.Row="1" Classes="eyebrow" Text="WHAT THIS FILE WILL CHANGE" Margin="0,20,0,9"/>
+      <Border Grid.Row="2" Classes="card" Padding="0">
         <Grid ColumnDefinitions="*,*,*,*,*">
           <StackPanel Grid.Column="0" Margin="15,12">
             <TextBlock Text="{Binding InFile}" FontSize="23" FontWeight="Medium"
@@ -75,7 +78,7 @@
         </Grid>
       </Border>
 
-      <ItemsControl ItemsSource="{Binding Warnings}" Margin="0,12,0,0">
+      <ItemsControl Grid.Row="3" ItemsSource="{Binding Warnings}" Margin="0,12,0,0">
         <ItemsControl.ItemTemplate>
           <DataTemplate>
             <Border Classes="notice caution" Margin="0,0,0,7">
@@ -86,11 +89,11 @@
         </ItemsControl.ItemTemplate>
       </ItemsControl>
 
-      <TextBlock Classes="eyebrow" Text="REVIEW EACH CHANGE" Margin="0,20,0,9"/>
-      <Border Classes="card" Padding="0" ClipToBounds="True">
-        <StackPanel>
-          <Border Background="{DynamicResource Surface2}" BorderBrush="{DynamicResource Line}"
-                  BorderThickness="0,0,0,1" Padding="14,9">
+      <Border Grid.Row="4" Classes="card" Padding="0" ClipToBounds="True" Margin="0,20,0,0">
+        <Grid RowDefinitions="Auto,Auto,*">
+          <TextBlock Grid.Row="0" Classes="eyebrow" Text="REVIEW EACH CHANGE" Margin="14,12,14,8"/>
+          <Border Grid.Row="1" Background="{DynamicResource Surface2}" BorderBrush="{DynamicResource Line}"
+                  BorderThickness="0,1,0,1" Padding="14,9">
             <Grid ColumnDefinitions="110,220,150,*">
               <TextBlock Grid.Column="0" Classes="colhead" Text="CHANGE"/>
               <TextBlock Grid.Column="1" Classes="colhead" Text="NAME"/>
@@ -98,7 +101,8 @@
               <TextBlock Grid.Column="3" Classes="colhead" Text="WHAT'S DIFFERENT"/>
             </Grid>
           </Border>
-          <ScrollViewer MaxHeight="330">
+          <ScrollViewer Grid.Row="2" Name="ChangesScroller"
+                        VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
             <ItemsControl ItemsSource="{Binding Changes}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="vm:ChangeRow">
@@ -138,23 +142,23 @@
               </ItemsControl.ItemTemplate>
             </ItemsControl>
           </ScrollViewer>
-        </StackPanel>
+        </Grid>
       </Border>
 
-      <TextBlock Text="People who drop out of the export are never deleted. They are marked inactive, hidden from sending, and restored automatically if they appear again."
+      <TextBlock Grid.Row="5" Text="People who drop out of the export are never deleted. They are marked inactive, hidden from sending, and restored automatically if they appear again."
                  FontSize="11.5" Foreground="{DynamicResource Ink3}"
                  TextWrapping="Wrap" MaxWidth="720" Margin="0,9,0,0"/>
 
-      <StackPanel Orientation="Horizontal" Spacing="9" Margin="0,18,0,0">
+      <StackPanel Grid.Row="6" Orientation="Horizontal" Spacing="9" Margin="0,18,0,0">
         <Button Classes="primary" Content="Apply these changes"
                 Command="{Binding ApplyCommand}" IsEnabled="{Binding !Busy}"/>
         <Button Content="Cancel" Command="{Binding CancelCommand}" IsEnabled="{Binding !Busy}"/>
       </StackPanel>
-    </StackPanel>
+    </Grid>
 
-    <TextBlock Text="{Binding Status}" Margin="0,14,0,0" FontSize="12.5"
+    <TextBlock Grid.Row="2" Text="{Binding Status}" Margin="0,14,0,0" FontSize="12.5"
                TextWrapping="Wrap" MaxWidth="720"
                Foreground="{DynamicResource Ink2}"
                IsVisible="{Binding Status, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-  </StackPanel>
+  </Grid>
 </UserControl>

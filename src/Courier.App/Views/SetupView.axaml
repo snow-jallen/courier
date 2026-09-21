@@ -4,7 +4,8 @@
              x:Class="Courier.App.Views.SetupView"
              x:DataType="vm:SetupViewModel">
 
-  <StackPanel Margin="28,26,28,34" MaxWidth="860" HorizontalAlignment="Left">
+  <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+    <StackPanel Margin="28,26,28,34" MaxWidth="900" HorizontalAlignment="Stretch">
     <TextBlock Classes="h2" Text="Setup"/>
     <TextBlock Classes="lede" Margin="0,4,0,0"
                Text="Where your directory is kept, and the accounts Courier sends through. Each account has a Test button that sends a real message to you, so Working means it actually worked."/>
@@ -241,5 +242,6 @@
       <TextBlock VerticalAlignment="Center" FontSize="12" Foreground="{DynamicResource Ink3}"
                  Text="Testing saves as well, so you never lose what you just typed."/>
     </StackPanel>
-  </StackPanel>
+    </StackPanel>
+  </ScrollViewer>
 </UserControl>

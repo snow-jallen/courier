@@ -78,8 +78,6 @@
       </DockPanel>
     </Border>
 
-    <ScrollViewer Grid.Column="1">
-      <ContentControl Content="{Binding Current}"/>
-    </ScrollViewer>
+    <ContentControl Grid.Column="1" Content="{Binding Current}"/>
   </Grid>
 </Window>

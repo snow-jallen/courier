@@ -4,8 +4,8 @@
              x:Class="Courier.App.Views.LcrBacklogView"
              x:DataType="vm:LcrBacklogViewModel">
 
-  <StackPanel Margin="28,26,28,34">
-    <Grid ColumnDefinitions="*,Auto">
+  <Grid Margin="28,26,28,24" RowDefinitions="Auto,*,Auto">
+    <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
       <StackPanel Grid.Column="0">
         <TextBlock Classes="h2" Text="To enter in LCR"/>
         <TextBlock Classes="lede" Margin="0,4,0,0"
@@ -15,10 +15,10 @@
               Command="{Binding CopyAllCommand}" IsVisible="{Binding !IsEmpty}"/>
     </Grid>
 
-    <Border Classes="card" Padding="0" Margin="0,18,0,0" ClipToBounds="True"
+    <Border Grid.Row="1" Classes="card" Padding="0" Margin="0,18,0,0" ClipToBounds="True"
             IsVisible="{Binding !IsEmpty}">
-      <StackPanel>
-        <Border Classes="header">
+      <Grid RowDefinitions="Auto,*">
+        <Border Grid.Row="0" Classes="header">
           <Grid ColumnDefinitions="2*,1.4*,0.9*,2.2*,0.8*,Auto">
             <TextBlock Grid.Column="0" Classes="colhead" Text="NAME"/>
             <TextBlock Grid.Column="1" Classes="colhead" Text="WARD"/>
@@ -28,7 +28,8 @@
             <TextBlock Grid.Column="5" Classes="colhead" Text="" Width="150"/>
           </Grid>
         </Border>
-        <ScrollViewer MaxHeight="440">
+        <ScrollViewer Grid.Row="1" Name="BacklogScroller"
+                      VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
           <ItemsControl ItemsSource="{Binding Rows}">
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="vm:PendingRow">
@@ -58,15 +59,16 @@
             </ItemsControl.ItemTemplate>
           </ItemsControl>
         </ScrollViewer>
-      </StackPanel>
+      </Grid>
     </Border>
 
-    <Border Classes="card" Padding="24,30" Margin="0,18,0,0" IsVisible="{Binding IsEmpty}">
+    <Border Grid.Row="1" Classes="card" Padding="24,30" Margin="0,18,0,0"
+            VerticalAlignment="Top" IsVisible="{Binding IsEmpty}">
       <TextBlock Text="{Binding Summary}" HorizontalAlignment="Center"
                  Foreground="{DynamicResource Ink3}"/>
     </Border>
 
-    <TextBlock Text="{Binding Summary}" Margin="0,9,0,0" FontSize="12"
+    <TextBlock Grid.Row="2" Text="{Binding Summary}" Margin="0,9,0,0" FontSize="12"
                Foreground="{DynamicResource Ink3}" IsVisible="{Binding !IsEmpty}"/>
-  </StackPanel>
+  </Grid>
 </UserControl>

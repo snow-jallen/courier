@@ -1,6 +1,8 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
+using Avalonia.Threading;
+using Avalonia.VisualTree;
 using Courier.App;
 using Courier.App.ViewModels;
 using Courier.App.Views;
@@ -137,6 +139,77 @@ public sealed class UserInterfaceTests : IDisposable
 
             model.ShowImport();
             Assert.Equal("JONATHAN ALLEN, STAKE SINGLES REPRESENTATIVE", model.SenderLabel);
+        }, _folder);
+
+    private static ScrollViewer Scroller(Window window, string name) =>
+        window.GetVisualDescendants().OfType<ScrollViewer>().Single(s => s.Name == name);
+
+    private static void Resize(Window window, double width, double height)
+    {
+        window.Width = width;
+        window.Height = height;
+        // Headless has no compositor driving frames, so the layout pass has to be
+        // asked for: measure and arrange against the new size, then let bindings settle.
+        window.Measure(new Size(width, height));
+        window.Arrange(new Rect(0, 0, width, height));
+        Dispatcher.UIThread.RunJobs();
+    }
+
+    /// <summary>The lists are the point of these screens, so they take whatever room
+    /// the window has rather than a height picked in advance. Asserted by measuring,
+    /// because a fixed height looks perfectly fine until somebody maximises.</summary>
+    [Theory]
+    [InlineData("people", "PeopleScroller")]
+    [InlineData("send", "RecipientScroller")]
+    [InlineData("lcr", "BacklogScroller")]
+    public Task A_list_grows_with_the_window(string screen, string scroller) =>
+        InWindow(async (window, model) =>
+        {
+            switch (screen)
+            {
+                case "people": await model.ShowPeopleAsync(); break;
+                case "send": await model.ShowSendAsync(); break;
+                default: await model.ShowLcrAsync(); break;
+            }
+
+            Resize(window, 1000, 700);
+            var small = Scroller(window, scroller).Bounds;
+
+            Resize(window, 1500, 1050);
+            var large = Scroller(window, scroller).Bounds;
+
+            Assert.True(large.Height > small.Height + 250,
+                $"{scroller} was {small.Height:0} tall in a 700px window and {large.Height:0} in a 1050px one");
+            Assert.True(large.Width > small.Width + 400,
+                $"{scroller} was {small.Width:0} wide in a 1000px window and {large.Width:0} in a 1500px one");
+        }, _folder);
+
+    [Fact]
+    public Task The_window_can_be_made_small_without_anything_spilling_out() =>
+        InWindow(async (window, model) =>
+        {
+            await model.ShowSendAsync();
+            Resize(window, 820, 560);
+
+            var scroller = Scroller(window, "RecipientScroller");
+            Assert.True(scroller.Bounds.Height > 0, "the recipient list collapsed to nothing");
+            Assert.True(scroller.Bounds.Width <= window.Width,
+                "the recipient list is wider than the window it sits in");
+        }, _folder);
+
+    [Fact]
+    public Task Setup_scrolls_on_its_own_now_that_the_window_does_not() =>
+        InWindow((window, model) =>
+        {
+            model.ShowSetup();
+            Resize(window, 1000, 700);
+
+            // Setup is a long form; with the window's scroller gone it must bring its own
+            // or the last card becomes unreachable.
+            var scrollers = window.GetVisualDescendants().OfType<ScrollViewer>().ToList();
+            Assert.NotEmpty(scrollers);
+            Assert.Contains(scrollers, s => s.Extent.Height > s.Viewport.Height);
+            return Task.CompletedTask;
         }, _folder);
 
     public void Dispose()
