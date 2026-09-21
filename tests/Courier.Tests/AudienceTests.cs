@@ -7,9 +7,10 @@ public sealed class AudienceTests
     private static Recipient Person(
         string last, string first, string? ward = "Manti 2nd Ward", int? age = 40,
         Channel channel = Channel.Email, string? email = "someone@example.com",
-        string? phone = "+14355550100", int? month = 3, int? day = 4, bool active = true) =>
+        string? phone = "+14355550100", int? month = 3, int? day = 4, bool active = true,
+        string? notes = null) =>
         new(Guid.NewGuid(), last, first, $"{last}, {first}", ward, age, month, day,
-            channel, email, phone, active);
+            channel, email, phone, active) { Notes = notes };
 
     private static IReadOnlyList<string> Names(IEnumerable<Recipient> people) =>
         people.Select(p => p.LastName).ToList();
@@ -33,6 +34,42 @@ public sealed class AudienceTests
         };
         Assert.Equal(["Ashby"], Names(Audience.Select(people, new AudienceFilter { Search = "miriam" })));
         Assert.Equal(["Quilley"], Names(Audience.Select(people, new AudienceFilter { Search = "elsewhere" })));
+    }
+
+    [Fact]
+    public void Searching_finds_a_tag_written_in_somebody_s_note()
+    {
+        var people = new[]
+        {
+            Person("Ashgrove", "Adelaide", notes: "#choir, brings the keyboard"),
+            Person("Quilley", "Barnaby", notes: "needs a ride"),
+            Person("Winslade", "Verity"),
+        };
+
+        Assert.Equal(["Ashgrove"], Names(Audience.Select(people, new AudienceFilter { Search = "#choir" })));
+        Assert.Equal(["Quilley"], Names(Audience.Select(people, new AudienceFilter { Search = "ride" })));
+    }
+
+    [Fact]
+    public void A_note_search_is_case_insensitive_like_the_rest()
+    {
+        var people = new[] { Person("Ashgrove", "Adelaide", notes: "Choir") };
+        Assert.Single(Audience.Select(people, new AudienceFilter { Search = "CHOIR" }));
+    }
+
+    [Fact]
+    public void A_tag_search_combines_with_the_other_filters()
+    {
+        var people = new[]
+        {
+            Person("Ashgrove", "Adelaide", ward: "Sterling Ward", notes: "#choir"),
+            Person("Quilley", "Barnaby", ward: "Manti 4th Ward", notes: "#choir"),
+        };
+
+        var kept = Audience.Select(people,
+            new AudienceFilter { Search = "#choir", Ward = "Sterling Ward" });
+
+        Assert.Equal(["Ashgrove"], Names(kept));
     }
 
     [Fact]

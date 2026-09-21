@@ -43,8 +43,12 @@ public sealed record AudienceFilter
     /// directory are not messaged.</summary>
     public static readonly AudienceFilter Everyone = new();
 
-    /// <summary>Matched against the name, e-mail and phone, case-insensitively and
-    /// anywhere in the value.</summary>
+    /// <summary>Matched against the name, e-mail, phone and note, case-insensitively
+    /// and anywhere in the value.
+    ///
+    /// The note is included on purpose: it makes the search box a tagging system
+    /// without one having to be built. Write "choir" or "#ride-needed" in somebody's
+    /// note and searching that word gathers them.</summary>
     public string? Search { get; init; }
 
     public string? Ward { get; init; }
@@ -82,7 +86,7 @@ public sealed record AudienceFilter
         if (string.IsNullOrEmpty(term)) return true;
 
         if (Has(person.DisplayName, term) || Has(person.SortName, term) || Has(person.FullName, term)
-            || Has(person.Email, term) || Has(person.Phone, term))
+            || Has(person.Email, term) || Has(person.Phone, term) || Has(person.Notes, term))
             return true;
 
         // "555-0142" and "(435) 555 0142" both have to find +14355550142, because the
