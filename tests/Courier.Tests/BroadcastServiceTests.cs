@@ -141,7 +141,7 @@ public sealed class BroadcastServiceTests : IDisposable
         var progress = new Progress<BroadcastProgress>(p => { if (p.Done == 2) stop.Cancel(); });
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(
-            () => service.SendAsync("Dinner", "Friday", "Everyone (3)", people, progress, null, stop.Token));
+            () => service.SendAsync("Dinner", "Friday", "Everyone (3)", people, progress, cancellation: stop.Token));
 
         // Two were really sent, and the record says so. Pretending otherwise would have
         // the user send to them twice.

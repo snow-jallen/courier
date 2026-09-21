@@ -42,7 +42,6 @@ public sealed partial class SetupViewModel : ObservableObject
         _gatewayUrl = settings.AndroidGateway.BaseUrl;
         _gatewayUser = settings.AndroidGateway.Username;
         _gatewayPassword = settings.AndroidGateway.Password;
-        _recordingUrl = settings.Twilio.VoiceRecordingUrl;
         _databasePath = services.DatabasePath;
         _settingsPath = store.Path;
         _saved = settings;
@@ -147,12 +146,9 @@ public sealed partial class SetupViewModel : ObservableObject
     }
 
     partial void OnMessagingServiceSidChanged(string value) => OnPropertyChanged(nameof(SendsRichText));
-    [ObservableProperty] private string _recordingUrl;
     [ObservableProperty] private string _twilioStatus = "";
     [ObservableProperty] private bool _twilioOk;
     [ObservableProperty] private bool _twilioBusy;
-
-    public bool HasRecording => RecordingUrl.Length > 0;
 
     /// <summary>What was last written to disk. Everything on this screen is compared
     /// against it, so the Save button can say whether it needs pressing instead of
@@ -168,7 +164,7 @@ public sealed partial class SetupViewModel : ObservableObject
     private static readonly string[] NotWorthRechecking =
         [nameof(IsDirty), nameof(SaveHint), nameof(EmailStatus), nameof(TwilioStatus),
          nameof(BackupStatus), nameof(EmailBusy), nameof(TwilioBusy), nameof(EmailOk), nameof(TwilioOk),
-         nameof(TwilioPurpose), nameof(TestTextLabel), nameof(TextRouteBlocked), nameof(HasRecording)];
+         nameof(TwilioPurpose), nameof(TestTextLabel), nameof(TextRouteBlocked)];
 
     /// <summary>Any field changing can make the screen dirty, and there are a lot of
     /// fields. Watching them all in one place beats remembering to add each new one.</summary>
@@ -213,7 +209,6 @@ public sealed partial class SetupViewModel : ObservableObject
             FromNumber = FromNumber.Trim(),
             TestNumber = TestNumber.Trim(),
             MessagingServiceSid = MessagingServiceSid.Trim(),
-            VoiceRecordingUrl = RecordingUrl.Trim(),
         },
     };
 
@@ -260,50 +255,6 @@ public sealed partial class SetupViewModel : ObservableObject
                 TextVia == TextTransport.Twilio ? "" : TestNumber.Trim());
             TwilioOk = check.Ok;
             TwilioStatus = check.Message;
-        }
-        finally { TwilioBusy = false; }
-    }
-
-    /// <summary>Rings the user so they can speak the message everyone who prefers a
-    /// call will hear. Twilio keeps the recording, so nothing needs hosting.</summary>
-    [RelayCommand]
-    private async Task RecordVoiceAsync()
-    {
-        TwilioBusy = true;
-        try
-        {
-            _store.Save(Current);
-            MarkSaved();
-            var sender = new VoiceSender(new TwilioGateway(Current.Twilio), Current.Twilio);
-            var session = await sender.StartRecordingAsync();
-
-            if (session is null || session.CallSid.Length == 0)
-            {
-                TwilioStatus = session?.Message ?? "Fill in your Twilio details and your own number first.";
-                TwilioOk = false;
-                return;
-            }
-
-            TwilioStatus = session.Message + " Courier will pick the recording up once you hang up.";
-
-            // Twilio only has the recording after the call ends, so wait for it rather
-            // than making the user press another button at exactly the right moment.
-            for (var attempt = 0; attempt < 40; attempt++)
-            {
-                await Task.Delay(TimeSpan.FromSeconds(3));
-                var url = await sender.CollectRecordingAsync(session.CallSid);
-                if (url is null) continue;
-
-                RecordingUrl = url;
-                OnPropertyChanged(nameof(HasRecording));
-                _store.Save(Current);
-                MarkSaved();
-                TwilioOk = true;
-                TwilioStatus = "Got it. That recording is what people who prefer a call will hear.";
-                return;
-            }
-
-            TwilioStatus = "Courier did not get a recording. Try again, and speak after the beep before hanging up.";
         }
         finally { TwilioBusy = false; }
     }

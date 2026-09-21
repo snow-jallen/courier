@@ -42,7 +42,6 @@ public sealed class SettingsStoreTests : IDisposable
                 AuthToken = "token",
                 FromNumber = "+14355550188",
                 TestNumber = "+14355550164",
-                VoiceRecordingUrl = "https://api.twilio.com/recording.mp3",
             },
             DefaultAreaCode = "801",
         };

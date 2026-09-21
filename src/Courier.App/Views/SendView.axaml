@@ -148,6 +148,33 @@
             </StackPanel>
           </Border>
         </StackPanel>
+        <!-- What the people who prefer a call will hear. Per message, because the
+             message is the script. -->
+        <Border Background="{DynamicResource ChVoiceSoft}" CornerRadius="9" Padding="14,12"
+                IsVisible="{Binding VoiceCount}">
+          <StackPanel Spacing="9">
+            <TextBlock Classes="eyebrow" Text="WHAT THE CALLS WILL PLAY"
+                       Foreground="{DynamicResource ChVoice}"/>
+            <RadioButton GroupName="voicemode" IsChecked="{Binding SpeakAloud}" FontSize="13"
+                         Content="Read the message out — nothing to record, ready now"/>
+            <RadioButton GroupName="voicemode" IsChecked="{Binding UseMyVoice}" FontSize="13"
+                         Content="In my own voice — Courier rings you and reads you the message to read back"/>
+            <StackPanel Orientation="Horizontal" Spacing="9">
+              <Button Content="Record it now" Command="{Binding RecordVoiceCommand}"
+                      IsEnabled="{Binding !VoiceBusy}" IsVisible="{Binding UseMyVoice}"/>
+              <Button Content="Call me and play it" Command="{Binding PreviewVoiceCommand}"
+                      IsEnabled="{Binding !VoiceBusy}"/>
+              <Border CornerRadius="20" Padding="10,4" VerticalAlignment="Center"
+                      Background="{DynamicResource GoodSoft}" IsVisible="{Binding HasRecording}">
+                <TextBlock Text="Recorded" FontSize="12" FontWeight="SemiBold"
+                           Foreground="{DynamicResource Good}"/>
+              </Border>
+            </StackPanel>
+            <TextBlock Text="{Binding VoiceStatus}" TextWrapping="Wrap" FontSize="12.5"
+                       Foreground="{DynamicResource Ink2}"/>
+          </StackPanel>
+        </Border>
+
         <Border Classes="notice privacy" IsVisible="{Binding IsBlocked}">
           <TextBlock Text="{Binding BlockedReason}" TextWrapping="Wrap" FontSize="12.5"
                      Foreground="{DynamicResource Ink2}"/>

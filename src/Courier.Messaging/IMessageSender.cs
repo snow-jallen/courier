@@ -15,8 +15,17 @@ public sealed record SendOutcome(SendStatus Status, string? ProviderMessageId, s
     public static SendOutcome Skipped(string why) => new(SendStatus.Skipped, null, why, null);
 }
 
-/// <summary>One message, in every form a channel might need.</summary>
-public sealed record OutgoingMessage(string Subject, string Body, string? VoiceRecordingUrl = null);
+/// <summary>One message, in every form a channel might need.
+///
+/// The two voice fields are alternatives: a recording of the sender reading this
+/// message, or the same words read aloud by Twilio. They belong to the message rather
+/// than to the settings, because the script is the message — a recording made once and
+/// kept in settings would be read out for every announcement thereafter.</summary>
+public sealed record OutgoingMessage(
+    string Subject,
+    string Body,
+    string? VoiceRecordingUrl = null,
+    bool SpeakAloud = false);
 
 /// <summary>The result of a Test button. <paramref name="Message"/> is shown to the
 /// user, so it says what happened in their words, never a provider's error code.</summary>

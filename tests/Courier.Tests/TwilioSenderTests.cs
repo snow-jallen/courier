@@ -41,10 +41,7 @@ public sealed class TwilioSenderTests
         TestNumber = "+14355550164",
     };
 
-    private static TwilioSettings WithRecording => Configured with
-    {
-        VoiceRecordingUrl = "https://api.twilio.com/2010-04-01/Accounts/AC0/Recordings/RE0.mp3",
-    };
+    private const string Recording = "https://api.twilio.com/2010-04-01/Accounts/AC0/Recordings/RE0.mp3";
 
     private static TwilioSettings WithRichText => Configured with
     {
@@ -187,46 +184,84 @@ public sealed class TwilioSenderTests
     // ---- calling ---------------------------------------------------------------
 
     [Fact]
-    public async Task A_call_plays_the_recording_and_nothing_else()
+    public async Task A_call_plays_the_recording_made_for_this_message()
     {
         var twilio = new FakeTwilio();
-        var outcome = await new VoiceSender(twilio, WithRecording).SendAsync("+14355550101", Message);
+        var message = new OutgoingMessage("", "Dinner Friday.", Recording);
+
+        var outcome = await new VoiceSender(twilio, Configured).SendAsync("+14355550101", message);
 
         Assert.Equal(SendStatus.Sent, outcome.Status);
         var call = Assert.Single(twilio.Calls);
         Assert.Contains("<Play>", call.Twiml, StringComparison.Ordinal);
-        Assert.Contains(WithRecording.VoiceRecordingUrl, call.Twiml, StringComparison.Ordinal);
-
-        // Reading the message aloud was explicitly not wanted.
-        Assert.DoesNotContain("<Say>", call.Twiml, StringComparison.Ordinal);
+        Assert.Contains(Recording, call.Twiml, StringComparison.Ordinal);
+        Assert.DoesNotContain("<Say", call.Twiml, StringComparison.Ordinal);
     }
 
     [Fact]
-    public async Task Calling_before_anything_is_recorded_explains_how_to_record()
+    public async Task Or_reads_the_message_aloud_when_that_is_what_was_chosen()
     {
         var twilio = new FakeTwilio();
-        var sender = new VoiceSender(twilio, Configured);
+        var message = new OutgoingMessage("", "Dinner Friday at 6:30.", SpeakAloud: true);
 
-        Assert.False(sender.IsConfigured);
-        Assert.False(sender.HasRecording);
+        await new VoiceSender(twilio, Configured).SendAsync("+14355550101", message);
 
-        var outcome = await sender.SendAsync("+14355550101", Message);
+        var call = Assert.Single(twilio.Calls);
+        Assert.Contains("<Say", call.Twiml, StringComparison.Ordinal);
+        Assert.Contains("Dinner Friday at 6:30.", call.Twiml, StringComparison.Ordinal);
+        Assert.DoesNotContain("<Play>", call.Twiml, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_recording_wins_over_reading_it_aloud()
+    {
+        var twilio = new FakeTwilio();
+        var message = new OutgoingMessage("", "Dinner Friday.", Recording, SpeakAloud: true);
+
+        await new VoiceSender(twilio, Configured).SendAsync("+14355550101", message);
+
+        Assert.Contains("<Play>", Assert.Single(twilio.Calls).Twiml, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("Relief Society's dinner is \"on\"")]
+    [InlineData("Bring < 3 chairs & a side")]
+    public async Task Punctuation_in_a_spoken_message_cannot_break_the_instructions(string body)
+    {
+        var twilio = new FakeTwilio();
+        await new VoiceSender(twilio, Configured)
+            .SendAsync("+14355550101", new OutgoingMessage("", body, SpeakAloud: true));
+
+        var twiml = Assert.Single(twilio.Calls).Twiml;
+        Assert.DoesNotContain("<\"", twiml, StringComparison.Ordinal);
+        Assert.Contains("&", twiml, StringComparison.Ordinal);
+        Assert.EndsWith("</Say></Response>", twiml, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_call_with_nothing_to_play_says_how_to_fix_it()
+    {
+        var twilio = new FakeTwilio();
+        var outcome = await new VoiceSender(twilio, Configured)
+            .SendAsync("+14355550101", new OutgoingMessage("", "Dinner Friday."));
 
         Assert.Equal(SendStatus.Failed, outcome.Status);
-        Assert.Contains("Record my message", outcome.Error!, StringComparison.Ordinal);
+        Assert.Contains("record yourself", outcome.Error!, StringComparison.Ordinal);
+        Assert.Contains("reading it aloud", outcome.Error!, StringComparison.Ordinal);
         Assert.Empty(twilio.Calls);
     }
 
     [Fact]
-    public async Task Recording_rings_the_user_and_asks_them_to_speak()
+    public async Task Recording_reads_the_script_back_before_the_beep()
     {
         var twilio = new FakeTwilio();
-        var session = await new VoiceSender(twilio, Configured).StartRecordingAsync();
+        var session = await new VoiceSender(twilio, Configured)
+            .StartRecordingAsync("Dinner Friday at 6:30.");
 
         Assert.NotNull(session);
-        Assert.Equal("CA0123456789abcdef", session.CallSid);
         var call = Assert.Single(twilio.Calls);
         Assert.Equal("+14355550164", call.To);
+        Assert.Contains("Dinner Friday at 6:30.", call.Twiml, StringComparison.Ordinal);
         Assert.Contains("<Record", call.Twiml, StringComparison.Ordinal);
     }
 
@@ -242,8 +277,21 @@ public sealed class TwilioSenderTests
     [Fact]
     public async Task Nothing_comes_back_while_the_call_is_still_going()
     {
-        var sender = new VoiceSender(new FakeTwilio(), Configured);
-        Assert.Null(await sender.CollectRecordingAsync("CA1"));
+        Assert.Null(await new VoiceSender(new FakeTwilio(), Configured).CollectRecordingAsync("CA1"));
+    }
+
+    [Fact]
+    public async Task A_preview_calls_you_with_exactly_what_everyone_else_would_hear()
+    {
+        var twilio = new FakeTwilio();
+        var message = new OutgoingMessage("", "Dinner Friday.", SpeakAloud: true);
+
+        await new VoiceSender(twilio, Configured).PreviewAsync("+14355550164", message);
+
+        var call = Assert.Single(twilio.Calls);
+        Assert.Equal("+14355550164", call.To);
+        Assert.Contains("Dinner Friday.", call.Twiml, StringComparison.Ordinal);
+        Assert.DoesNotContain("<Record", call.Twiml, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -251,5 +299,6 @@ public sealed class TwilioSenderTests
     {
         Assert.Equal(Channel.Text, new TextSender(new FakeTwilio(), Configured).Channel);
         Assert.Equal(Channel.Voice, new VoiceSender(new FakeTwilio(), Configured).Channel);
+        Assert.True(new VoiceSender(new FakeTwilio(), Configured).IsConfigured);
     }
 }
