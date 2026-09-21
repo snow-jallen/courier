@@ -88,6 +88,23 @@ public sealed class EmailSenderTests
     }
 
     [Fact]
+    public async Task A_rejected_certificate_says_what_the_connection_actually_complained_about()
+    {
+        // MailKit reports the real cause only in the innermost exception; the outer one
+        // says nothing but "an error occurred", which is what the user was being shown.
+        var handshake = new SslHandshakeException(
+            "An error occurred while attempting to establish an SSL or TLS connection.",
+            new System.Security.Authentication.AuthenticationException(
+                "The remote certificate was rejected by the provided RemoteCertificateValidationCallback."));
+
+        var outcome = await Sender(new FakeSmtp(handshake)).SendAsync("verla@example.com", Message);
+
+        Assert.Contains("remote certificate was rejected", outcome.Error!, StringComparison.Ordinal);
+        Assert.Contains("antivirus", outcome.Error!, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("alternative port", outcome.Error!, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task No_connection_reads_as_no_connection()
     {
         var smtp = new FakeSmtp(new System.Net.Sockets.SocketException(60));

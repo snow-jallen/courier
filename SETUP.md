@@ -321,6 +321,7 @@ ones you are most likely to meet:
 | What Courier says | What to do |
 | --- | --- |
 | Google would not accept that password | You used your Gmail password. Go back to Part 1 and make an app password. |
+| Could not make a secure connection to smtp.gmail.com | Courier already retried on the other port, so this is the network rather than Gmail. Antivirus that scans secure connections is the usual cause; a VPN or a guest network is next. Try another network to confirm. |
 | Twilio would not accept your account details | The Auth Token is usually copied short. Copy it again. |
 | Your Twilio account is still a trial | Add funds — Part 2, "Add credit". |
 | Gmail has stopped accepting messages for today | You have passed 500 emails. Everything up to that point went out; send the rest tomorrow. |

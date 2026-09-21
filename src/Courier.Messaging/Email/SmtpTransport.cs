@@ -28,13 +28,40 @@ public sealed class SmtpTransport : ISmtpTransport
         message.Subject = subject;
         message.Body = new TextPart(TextFormat.Plain) { Text = body };
 
-        using var client = new SmtpClient();
+        using var client = new SmtpClient
+        {
+            // MailKit checks certificate revocation by default, which means an OCSP or
+            // CRL lookup during the handshake. Where that lookup cannot complete — a
+            // network that blocks it, a captive portal, some antivirus — the certificate
+            // is rejected and the connection fails with "could not make a secure
+            // connection", which sounds like a broken server and is not. The certificate
+            // is still verified; only the revocation lookup is skipped.
+            CheckCertificateRevocation = false,
+            Timeout = 30_000,
+        };
 
         // 465 is TLS from the first byte; 587 and everything else negotiate it with
         // STARTTLS. Guessing wrong hangs rather than failing, so it is worth being explicit.
         var security = settings.Port == 465 ? SecureSocketOptions.SslOnConnect : SecureSocketOptions.StartTls;
 
-        await client.ConnectAsync(settings.Host, settings.Port, security, ct);
+        try
+        {
+            await client.ConnectAsync(settings.Host, settings.Port, security, ct);
+        }
+        catch (Exception first) when (first is SslHandshakeException or System.Net.Sockets.SocketException
+                                      && settings.Port != 465)
+        {
+            // Guest and institution networks commonly allow 465 and block 587. One
+            // retry on the other port turns an evening of confusion into a pause.
+            try
+            {
+                await client.ConnectAsync(settings.Host, 465, SecureSocketOptions.SslOnConnect, ct);
+            }
+            catch
+            {
+                throw first;
+            }
+        }
 
         // Google prints an app password in four groups of four and ignores the spaces
         // when you type it back; a pasted password keeps them.

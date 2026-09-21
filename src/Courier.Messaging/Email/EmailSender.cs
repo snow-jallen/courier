@@ -76,8 +76,10 @@ public sealed class EmailSender(ISmtpTransport transport, EmailSettings settings
 
         SmtpCommandException smtp => ExplainSmtp(smtp, address),
 
-        SslHandshakeException =>
-            $"Courier could not make a secure connection to {settings.Host}. If this computer is on a guest or church network, that network may be blocking mail; try again from another one.",
+        SslHandshakeException handshake =>
+            $"Courier could not make a secure connection to {settings.Host}. "
+            + "It already tried the alternative port. This is usually a network that inspects or blocks mail — a guest or church Wi-Fi, a VPN, or antivirus that scans secure connections. "
+            + $"Try another network, or turn off mail scanning in your antivirus. The connection said: {Innermost(handshake)}",
 
         SocketException or IOException or SmtpProtocolException or TimeoutException or OperationCanceledException =>
             $"Courier could not reach {settings.Host}. Check that this computer is connected to the internet, then try again.",
@@ -109,6 +111,15 @@ public sealed class EmailSender(ISmtpTransport transport, EmailSettings settings
             _ =>
                 $"{settings.Host} refused the message to {address}. It said: {failure.Message}",
         };
+    }
+
+    /// <summary>The bottom of the chain, which is the part that says what actually went
+    /// wrong; the outer layers only say that something did.</summary>
+    private static string Innermost(Exception error)
+    {
+        var current = error;
+        while (current.InnerException is { } inner) current = inner;
+        return current.Message.Split('\n')[0].Trim();
     }
 
     private bool IsGmail => settings.Host.Contains("gmail", StringComparison.OrdinalIgnoreCase);
