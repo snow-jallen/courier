@@ -12,6 +12,10 @@ class Program
     [STAThread]
     public static void Main(string[] args)
     {
+        // Must be the first thing that happens: on the run straight after an update this
+        // is what finishes installing it, and it exits rather than returning.
+        Velopack.VelopackApp.Build().Run();
+
         // A crash is the one thing a user cannot describe usefully, so it is the one
         // thing most worth writing down.
         AppDomain.CurrentDomain.UnhandledException += (_, e) =>

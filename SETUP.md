@@ -37,6 +37,17 @@ account that can spend money.
 
 ---
 
+## Part 0 · Installing Courier
+
+Download the installer for your computer from the project's Releases page and run it.
+There is nothing else to install first.
+
+Courier keeps itself up to date: **Setup → Updates → Check for updates** fetches a newer
+version and restarts into it. You will not lose anything — the directory and your
+settings are separate files that updates do not touch.
+
+---
+
 ## Part 1 · Email, through your own Gmail
 
 Courier sends email from your own Gmail account. Google will not accept your normal

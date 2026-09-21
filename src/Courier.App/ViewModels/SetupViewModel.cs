@@ -67,6 +67,40 @@ public sealed partial class SetupViewModel : ObservableObject
     [ObservableProperty] private string _settingsPath;
     [ObservableProperty] private string _backupStatus = "";
 
+    // --- updates ---------------------------------------------------------------------
+    private readonly UpdateService _updates = new(UpdateService.DefaultRepository);
+
+    [ObservableProperty] private string _updateStatus = "";
+    [ObservableProperty] private bool _updateBusy;
+    [ObservableProperty] private bool _updateReady;
+
+    public string CurrentVersion => $"Version {UpdateService.CurrentVersion}";
+
+    [RelayCommand]
+    private async Task CheckForUpdatesAsync()
+    {
+        UpdateBusy = true;
+        UpdateStatus = "Looking for a newer version\u2026";
+        try
+        {
+            var state = await _updates.CheckAsync();
+            UpdateStatus = state.Message;
+
+            // Found one: fetch it straight away rather than making them press twice.
+            if (state.Version is not null)
+            {
+                UpdateStatus = $"Downloading version {state.Version}\u2026";
+                var downloaded = await _updates.DownloadAsync();
+                UpdateStatus = downloaded.Message;
+                UpdateReady = downloaded.UpdateReady;
+            }
+        }
+        finally { UpdateBusy = false; }
+    }
+
+    [RelayCommand]
+    private void RestartToUpdate() => _updates.ApplyAndRestart();
+
     // --- getting help --------------------------------------------------------------
     [ObservableProperty] private string _logFolder;
     [ObservableProperty] private string _logStatus = "";
