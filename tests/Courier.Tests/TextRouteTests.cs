@@ -105,6 +105,39 @@ public sealed class TextRouteTests : IDisposable
         Assert.False(send.IsBlocked);
     }
 
+    // ---- only the guidance that applies to the chosen route ------------------------
+
+    [Fact]
+    public void Twilio_advice_is_labelled_as_being_about_twilio()
+    {
+        var setup = Setup(isMac: true);
+        Assert.True(setup.UseTwilioForText);
+        Assert.Equal("Used for your texts and your phone calls", setup.TwilioPurpose);
+        Assert.Equal("Send myself a test text", setup.TestTextLabel);
+    }
+
+    [Fact]
+    public void Choosing_a_phone_says_the_twilio_account_is_now_only_for_calls()
+    {
+        var setup = Setup(isMac: true);
+        setup.UseIphone = true;
+
+        // The account is still needed — calls always go through it — so it must not read
+        // as a leftover from a route no longer in use.
+        Assert.Equal("Used for phone calls — your texts go out from your own phone", setup.TwilioPurpose);
+        Assert.Equal("Text myself through Messages", setup.TestTextLabel);
+    }
+
+    [Fact]
+    public void The_android_route_names_the_phone_rather_than_the_service()
+    {
+        var setup = Setup(isMac: false);
+        setup.UseAndroid = true;
+
+        Assert.Equal("Text myself through my phone", setup.TestTextLabel);
+        Assert.DoesNotContain("texts", setup.TwilioPurpose.Split('—')[0], StringComparison.OrdinalIgnoreCase);
+    }
+
     public void Dispose()
     {
         try { if (Directory.Exists(_folder)) Directory.Delete(_folder, recursive: true); }
