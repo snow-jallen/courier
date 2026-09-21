@@ -84,3 +84,63 @@ public sealed class ColumnDetectionTests(ITestOutputHelper output)
         Assert.NotNull(columns);
     }
 }
+
+/// <summary>Runs a genuine export all the way through the importer into a real
+/// database — the path the app takes, not just the parser the other tests exercise.</summary>
+public sealed class RealImportTests(ITestOutputHelper output) : IDisposable
+{
+    private readonly string _path = Path.Combine(Path.GetTempPath(), $"courier-real-{Guid.NewGuid():N}.db");
+
+    private Courier.Data.CourierDbContext Open()
+    {
+        var db = Courier.Data.CourierDatabase.Open(_path);
+        Microsoft.EntityFrameworkCore.RelationalDatabaseFacadeExtensions.Migrate(db.Database);
+        return db;
+    }
+
+    [RequiresRealReport]
+    public async Task The_whole_directory_imports_and_then_imports_again_unchanged()
+    {
+        using var db = Open();
+        var service = new Courier.Data.ImportService(db);
+
+        var (report, plan) = await service.PrepareAsync(TestPaths.RealReport!);
+        output.WriteLine($"first run: {plan.Added.Count} added, {plan.Warnings.Count} warnings");
+        Assert.Equal(427, plan.Added.Count);
+        Assert.Empty(plan.Deactivated);
+
+        var run = await service.ApplyAsync(report, plan, new DateOnly(2026, 9, 16));
+        Assert.Equal(427, run.AddedCount);
+
+        var people = await new Courier.Data.DirectoryService(db).RecipientsAsync();
+        Assert.Equal(427, people.Count);
+
+        var withPhone = people.Count(p => p.Phone is not null);
+        var withEmail = people.Count(p => p.Email is not null);
+        output.WriteLine($"reachable by phone: {withPhone}, by email: {withEmail}");
+        Assert.True(withPhone > 300, $"only {withPhone} people got a usable phone number");
+        Assert.True(withEmail > 200, $"only {withEmail} people got an email address");
+
+        // Every phone Courier would dial must be in the form Twilio accepts.
+        Assert.All(people.Where(p => p.Phone is not null),
+            p => Assert.Matches(@"^\+1\d{10}$", p.Phone!));
+
+        // Importing the very same file again must change nothing at all. This is the
+        // check that matters most: the app re-imports every week.
+        var (secondReport, secondPlan) = await service.PrepareAsync(TestPaths.RealReport!);
+        output.WriteLine($"second run: {secondPlan.Added.Count} added, {secondPlan.Updated.Count} updated, " +
+                         $"{secondPlan.Deactivated.Count} deactivated, {secondPlan.Unchanged} unchanged");
+
+        Assert.Empty(secondPlan.Added);
+        Assert.Empty(secondPlan.Updated);
+        Assert.Empty(secondPlan.Deactivated);
+        Assert.Equal(427, secondPlan.Unchanged);
+        Assert.Equal(secondReport.Sha256, report.Sha256);
+    }
+
+    public void Dispose()
+    {
+        Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+        if (File.Exists(_path)) File.Delete(_path);
+    }
+}
