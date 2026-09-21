@@ -152,3 +152,134 @@ public sealed class RealImportTests(ITestOutputHelper output) : IDisposable
         catch (IOException) { /* a temp file left behind harms nothing */ }
     }
 }
+
+/// <summary>Measures the parser against a real Organizations and Callings export.
+/// The numbers here are what decide whether an import of that report can be
+/// trusted, so they are asserted, not just printed.</summary>
+public sealed class RealCallingsReportTests(ITestOutputHelper output)
+{
+    [RequiresRealCallingsReport]
+    public void Reads_every_person_from_the_report()
+    {
+        var report = LcrReportParser.Parse(TestPaths.RealCallingsReport!);
+
+        var phone = new Regex(@"^(\(\d{3}\)\s*)?\d{3}-\d{4}$");
+        var email = new Regex(@"^[^@\s]+@[^@\s]+\.[A-Za-z]{2,}$");
+        var birthday = new Regex(@"^\d{1,2} [A-Z][a-z]{2}$");
+
+        int Bad(Func<LcrRow, string> field, Regex shape) =>
+            report.Rows.Count(r => field(r).Length > 0 && !shape.IsMatch(field(r)));
+
+        output.WriteLine($"format      {report.Source.FormatName}");
+        output.WriteLine($"pages       {report.PageCount}");
+        output.WriteLine($"people      {report.Rows.Count}");
+        output.WriteLine($"bad phone   {Bad(r => r.Phone, phone)}");
+        output.WriteLine($"bad email   {Bad(r => r.Email, email)}");
+        output.WriteLine($"bad bday    {Bad(r => r.Birthday, birthday)}");
+        output.WriteLine($"no email    {report.Rows.Count(r => r.Email.Length == 0)}");
+        output.WriteLine($"no phone    {report.Rows.Count(r => r.Phone.Length == 0)}");
+        foreach (var r in report.Rows.Where(r => r.Phone.Length > 0 && !phone.IsMatch(r.Phone)).Take(5))
+            output.WriteLine($"  PHONE '{r.Phone}'");
+        foreach (var r in report.Rows.Where(r => r.Email.Length > 0 && !email.IsMatch(r.Email)).Take(5))
+            output.WriteLine($"  EMAIL '{r.Email}'");
+
+        Assert.Equal("Organizations and Callings", report.Source.FormatName);
+        Assert.Equal(9, report.PageCount);
+
+        // The report prints "Count: 428" in its own footer. Reading exactly that many
+        // people back is the strongest check available that no row was dropped.
+        Assert.Equal(428, report.Rows.Count);
+        Assert.Equal(0, Bad(r => r.Phone, phone));
+        Assert.Equal(0, Bad(r => r.Birthday, birthday));
+        Assert.Equal(0, Bad(r => r.Email, email));
+    }
+
+    [RequiresRealCallingsReport]
+    public void Reads_nothing_into_the_columns_this_report_does_not_print()
+    {
+        var report = LcrReportParser.Parse(TestPaths.RealCallingsReport!);
+
+        Assert.All(report.Rows, r => Assert.Equal("", r.Address));
+        Assert.All(report.Rows, r => Assert.Equal("", r.Age));
+        Assert.False(report.Source.Carry(ReportFields.Address));
+        Assert.False(report.Source.Carry(ReportFields.Age));
+    }
+
+    [RequiresRealCallingsReport]
+    public void Leaves_out_the_stake_callings_table()
+    {
+        // Page 1 prints the stake's Single Adult callings above the members table,
+        // including rows reading "Calling Vacant" and names with no contact details.
+        var report = LcrReportParser.Parse(TestPaths.RealCallingsReport!);
+        Assert.DoesNotContain(report.Rows, r => r.Name.Contains("Vacant", StringComparison.Ordinal));
+        Assert.All(report.Rows, r => Assert.Contains(',', r.Name));
+    }
+
+    [RequiresRealCallingsReport]
+    public void Every_unit_snaps_onto_a_known_ward()
+    {
+        var report = LcrReportParser.Parse(TestPaths.RealCallingsReport!);
+        var unsnapped = report.Rows.Where(r => Wards.Snap(r.Unit) is null).ToList();
+        foreach (var r in unsnapped.Take(10)) output.WriteLine($"  UNIT '{r.Unit}'");
+        Assert.Empty(unsnapped);
+    }
+}
+
+/// <summary>Runs a genuine Organizations and Callings export all the way through the
+/// importer into a real database, then imports it again to prove it settles.</summary>
+public sealed class RealCallingsImportTests(ITestOutputHelper output) : IDisposable
+{
+    private readonly string _path = Path.Combine(Path.GetTempPath(), $"courier-callings-{Guid.NewGuid():N}.db");
+
+    private Courier.Data.CourierDbContext Open()
+    {
+        var db = Courier.Data.CourierDatabase.Open(_path);
+        Microsoft.EntityFrameworkCore.RelationalDatabaseFacadeExtensions.Migrate(db.Database);
+        return db;
+    }
+
+    [RequiresRealCallingsReport]
+    public async Task The_whole_directory_imports_and_then_imports_again_unchanged()
+    {
+        using var db = Open();
+        var service = new Courier.Data.ImportService(db);
+
+        var (report, plan) = await service.PrepareAsync(TestPaths.RealCallingsReport!);
+        output.WriteLine($"first run: {plan.Added.Count} added, {plan.Warnings.Count} warnings");
+        output.WriteLine($"note: {string.Join(" ", plan.Notes)}");
+
+        Assert.Equal(428, plan.Added.Count);
+        Assert.Empty(plan.Deactivated);
+        Assert.Contains(plan.Notes, n => n.Contains("Organizations and Callings", StringComparison.Ordinal));
+
+        var run = await service.ApplyAsync(report, plan, new DateOnly(2026, 9, 21));
+        Assert.Equal(428, run.AddedCount);
+
+        var people = await new Courier.Data.DirectoryService(db).RecipientsAsync();
+        Assert.Equal(428, people.Count);
+
+        var withPhone = people.Count(p => p.Phone is not null);
+        var withEmail = people.Count(p => p.Email is not null);
+        output.WriteLine($"reachable by phone: {withPhone}, by email: {withEmail}");
+        Assert.True(withPhone > 300, $"only {withPhone} people got a usable phone number");
+        Assert.True(withEmail > 200, $"only {withEmail} people got an email address");
+
+        Assert.All(people.Where(p => p.Phone is not null),
+            p => Assert.Matches(@"^\+1\d{10}$", p.Phone!));
+
+        var (_, second) = await service.PrepareAsync(TestPaths.RealCallingsReport!);
+        output.WriteLine($"second run: {second.Added.Count} added, {second.Updated.Count} updated, " +
+                         $"{second.Deactivated.Count} deactivated, {second.Unchanged} unchanged");
+
+        Assert.Empty(second.Added);
+        Assert.Empty(second.Updated);
+        Assert.Empty(second.Deactivated);
+        Assert.Equal(428, second.Unchanged);
+    }
+
+    public void Dispose()
+    {
+        try { if (File.Exists(_path)) File.Delete(_path); }
+        catch (IOException) { /* a temp file left behind harms nothing */ }
+    }
+}
