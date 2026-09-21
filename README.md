@@ -44,9 +44,12 @@ waiting for one registration.
 
 ## Releasing
 
-Tag a commit and GitHub Actions does the rest:
+Every push to `main` becomes a release. Nothing to tag and no version to decide: the
+build number supplies it, so versions always go up.
 
-    git tag v1.0.1 && git push origin v1.0.1
+    git push            # that is the whole release process
+
+Put `[skip release]` in the commit message to push without building one.
 
 The workflow runs the tests, then builds and packages on four real runners — Windows,
 Linux, Apple silicon and Intel Macs — because an installer has to be made on the system
