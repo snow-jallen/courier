@@ -34,8 +34,19 @@ public sealed class UserInterfaceTests : IDisposable
     private static readonly Lazy<HeadlessUnitTestSession> Session = new(() =>
         HeadlessUnitTestSession.StartNew(typeof(HeadlessApp)));
 
-    private static Task InWindow(Func<MainWindow, MainWindowViewModel, Task> body, string folder) =>
-        Session.Value.Dispatch(async () =>
+    private static Task InWindow(Func<MainWindow, MainWindowViewModel, Task> body, string folder)
+    {
+        // Dispatch has three overloads: Action, Func<TResult>, and Func<Task<TResult>>. An
+        // async lambda with no return value has natural type Func<Task>, which binds to the
+        // Func<TResult> overload with TResult inferred as Task itself - that overload wraps
+        // the call in Task.FromResult(...), which is always already complete, so the inner
+        // task (the one actually running the window and body) is handed back as an inert
+        // result that nobody awaits: every exception and failed assertion inside was lost,
+        // and every test using this helper passed unconditionally. Giving the lambda a return
+        // value makes its natural type Func<Task<int>>, which binds to the Func<Task<TResult>>
+        // overload instead - that one forwards the real task, so Dispatch actually waits for
+        // it and actually observes its exception.
+        Func<Task<int>> action = async () =>
         {
             Directory.CreateDirectory(folder);
             var services = AppServices.Start(Path.Combine(folder, "contacts.db"));
@@ -44,7 +55,10 @@ public sealed class UserInterfaceTests : IDisposable
 
             var model = (MainWindowViewModel)window.DataContext!;
             await body(window, model);
-        }, CancellationToken.None);
+            return 0;
+        };
+        return Session.Value.Dispatch(action, CancellationToken.None);
+    }
 
     [Fact]
     public Task The_window_opens_on_the_import_screen() => InWindow((window, model) =>
