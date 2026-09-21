@@ -220,19 +220,28 @@ You can do the same for calls to that number: make a second bin with
 
 ---
 
-## Part 6 · Recording your voice message
+## Part 6 · What the phone calls will say
 
-People who prefer a phone call hear **your voice**, not a robot reading text. You record
-it from inside Courier.
+Nothing to set up in advance. This is chosen on the **Send screen**, for each message,
+because the message is the script.
 
-1. Fill in the Twilio details on Courier's **Setup** screen first (Part 8).
-2. Press **Record my message**.
-3. Courier rings your phone. Speak after the beep — say who you are, as you would on a
-   voicemail — then hang up.
-4. Courier collects the recording and says *Recorded*.
+When a message is going to anybody who prefers a call, the Send screen offers two
+options:
 
-Re-record whenever the message changes. Press **Call me and play the recording** to hear
-exactly what everyone else will hear.
+- **Read the message out.** Twilio reads your words aloud. Nothing to record and ready
+  immediately — right for a short, factual announcement.
+- **In my own voice.** Courier rings you, reads your own message back so you are not
+  improvising the wording of something you wrote ten minutes ago, then beeps. Read it,
+  hang up, and Courier collects the recording.
+
+Either way, **Call me and play it** rings you and plays exactly what everyone else will
+hear. Worth doing once before a message goes to three hundred people.
+
+Change the message after recording it and Courier throws the recording away and says so.
+A recording of the old wording would go out sounding confident and be wrong.
+
+Both need the Twilio account from Part 2 — calls always go through it, even when your
+texts come from your own phone (Part 3b).
 
 ---
 
