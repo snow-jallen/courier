@@ -4,8 +4,11 @@
              x:Class="Courier.App.Views.SetupView"
              x:DataType="vm:SetupViewModel">
 
-  <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-    <StackPanel Margin="28,26,28,34" MaxWidth="900" HorizontalAlignment="Stretch">
+  <!-- The form scrolls; Save does not. Nobody should have to go looking for it to find
+       out whether their typing has been kept. -->
+  <Grid RowDefinitions="*,Auto">
+  <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+    <StackPanel Margin="28,26,28,20" MaxWidth="900" HorizontalAlignment="Stretch">
     <TextBlock Classes="h2" Text="Setup"/>
     <TextBlock Classes="lede" Margin="0,4,0,0"
                Text="Where your directory is kept, and the accounts Courier sends through. Each account has a Test button that sends a real message to you, so Working means it actually worked."/>
@@ -287,11 +290,31 @@
       </StackPanel>
     </Border>
 
-    <StackPanel Orientation="Horizontal" Spacing="9" Margin="0,16,0,0">
-      <Button Classes="primary" Content="Save" Command="{Binding SaveCommand}"/>
-      <TextBlock VerticalAlignment="Center" FontSize="12" Foreground="{DynamicResource Ink3}"
-                 Text="Testing saves as well, so you never lose what you just typed."/>
-    </StackPanel>
     </StackPanel>
   </ScrollViewer>
+
+  <Border Grid.Row="1" Background="{DynamicResource Surface2}"
+          BorderBrush="{DynamicResource Line}" BorderThickness="0,1,0,0" Padding="28,12">
+    <Grid ColumnDefinitions="Auto,Auto,*">
+      <Button Grid.Column="0" Classes="primary" Content="Save" Command="{Binding SaveCommand}"/>
+
+      <Border Grid.Column="1" CornerRadius="20" Padding="10,4" Margin="12,0,0,0"
+              VerticalAlignment="Center" Background="{DynamicResource WarnSoft}"
+              IsVisible="{Binding IsDirty}">
+        <TextBlock Text="Not saved yet" FontSize="12" FontWeight="SemiBold"
+                   Foreground="{DynamicResource Warn}"/>
+      </Border>
+      <Border Grid.Column="1" CornerRadius="20" Padding="10,4" Margin="12,0,0,0"
+              VerticalAlignment="Center" Background="{DynamicResource GoodSoft}"
+              IsVisible="{Binding !IsDirty}">
+        <TextBlock Text="Saved" FontSize="12" FontWeight="SemiBold"
+                   Foreground="{DynamicResource Good}"/>
+      </Border>
+
+      <TextBlock Grid.Column="2" VerticalAlignment="Center" Margin="14,0,0,0" FontSize="12"
+                 TextWrapping="Wrap" Foreground="{DynamicResource Ink3}"
+                 Text="Pressing any Test button saves as well, so you never lose what you just typed."/>
+    </Grid>
+  </Border>
+  </Grid>
 </UserControl>
