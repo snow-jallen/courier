@@ -107,7 +107,6 @@ public sealed class UserInterfaceTests : IDisposable
 
             Assert.Equal("smtp.gmail.com", new SettingsStore(setup.SettingsPath).Load().Email.Host);
             Assert.EndsWith("contacts.db", setup.DatabasePath, StringComparison.Ordinal);
-            Assert.False(setup.HasRecording);
             return Task.CompletedTask;
         }, _folder);
 
@@ -403,6 +402,44 @@ public sealed class UserInterfaceTests : IDisposable
 
             // And the editor shows the number in the readable form too.
             Assert.Equal("(435) 555-0111", editor.Phone);
+        }, _folder);
+
+    [Fact]
+    public Task The_calls_read_the_message_out_unless_you_record_it_yourself() =>
+        InWindow(async (_, model) =>
+        {
+            await model.ShowSendAsync();
+            var send = (SendViewModel)model.Current;
+
+            // Ready to send without recording anything, which is the common case.
+            Assert.True(send.SpeakAloud);
+            Assert.False(send.UseMyVoice);
+            Assert.False(send.HasRecording);
+            Assert.Contains("read the message out", send.VoiceStatus, StringComparison.OrdinalIgnoreCase);
+
+            send.UseMyVoice = true;
+            Assert.False(send.SpeakAloud);
+            Assert.Contains("Record yourself", send.VoiceStatus, StringComparison.Ordinal);
+            await Task.CompletedTask;
+        }, _folder);
+
+    [Fact]
+    public Task Changing_the_message_throws_away_a_recording_of_the_old_wording() =>
+        InWindow(async (_, model) =>
+        {
+            await model.ShowSendAsync();
+            var send = (SendViewModel)model.Current;
+
+            send.Body = "Dinner is Friday at 6:30.";
+            send.RecordingUrl = "https://api.twilio.com/RE1.mp3";
+            Assert.True(send.HasRecording);
+
+            send.Body = "Dinner has moved to Thursday.";
+
+            // A recording of the old wording would go out sounding confident and wrong.
+            Assert.False(send.HasRecording);
+            Assert.Contains("recording was cleared", send.VoiceStatus, StringComparison.Ordinal);
+            await Task.CompletedTask;
         }, _folder);
 
     public void Dispose()

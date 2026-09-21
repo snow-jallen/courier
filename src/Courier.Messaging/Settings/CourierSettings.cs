@@ -39,11 +39,6 @@ public sealed record TwilioSettings
 
     public bool SendsRichText => MessagingServiceSid.Trim().Length > 0;
 
-    /// <summary>Twilio-hosted URL of the recording played to people who prefer a call.
-    /// Produced by having Courier ring the user and record them, so no file ever needs
-    /// hosting anywhere.</summary>
-    public string VoiceRecordingUrl { get; init; } = "";
-
     public bool IsComplete =>
         AccountSid.Length > 0 && AuthToken.Length > 0
         && (FromNumber.Length > 0 || MessagingServiceSid.Length > 0);

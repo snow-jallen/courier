@@ -300,24 +300,16 @@
               <TextBlock Text="Always through Twilio, playing a recording of your own voice"
                          FontSize="12" Foreground="{DynamicResource Ink3}"/>
             </StackPanel>
-            <Border Grid.Column="1" CornerRadius="20" Padding="10,4" VerticalAlignment="Center"
-                    Background="{DynamicResource GoodSoft}" IsVisible="{Binding HasRecording}">
-              <TextBlock Text="Recorded" FontSize="12" FontWeight="SemiBold"
-                         Foreground="{DynamicResource Good}"/>
-            </Border>
+
           </Grid>
         </Border>
         <StackPanel Margin="15" Spacing="12">
           <Border Background="{DynamicResource ChVoiceSoft}" CornerRadius="8" Padding="12,10">
             <TextBlock TextWrapping="Wrap" FontSize="12.5" Foreground="{DynamicResource ChVoice}"
-                       Text="People who prefer a call hear your own voice, not a robot. Courier rings you, you speak the message after the beep, and that recording is what plays. Calls use the Twilio account above even when your texts come from your own phone — and a verified caller ID there makes them show your real number."/>
+                       Text="People who prefer a call hear the message itself — either read aloud, or in your own voice if you record it. Both are chosen on the Send screen, per message, because the message is the script. Calls use the Twilio account above even when your texts come from your own phone, and a verified caller ID there makes them show your real number."/>
           </Border>
-          <StackPanel Orientation="Horizontal" Spacing="9">
-            <Button Content="Record my message" Command="{Binding RecordVoiceCommand}"
-                    IsEnabled="{Binding !TwilioBusy}"/>
-            <Button Content="Call me and play it back" Command="{Binding TestCallCommand}"
-                    IsEnabled="{Binding !TwilioBusy}"/>
-          </StackPanel>
+          <Button Content="Call me to check this works" HorizontalAlignment="Left"
+                  Command="{Binding TestCallCommand}" IsEnabled="{Binding !TwilioBusy}"/>
         </StackPanel>
       </StackPanel>
     </Border>

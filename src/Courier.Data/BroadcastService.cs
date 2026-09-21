@@ -23,12 +23,15 @@ public sealed class BroadcastService(CourierDbContext db, IReadOnlyDictionary<Ch
         IReadOnlyList<Recipient> chosen,
         IProgress<BroadcastProgress>? progress = null,
         Channel? via = null,
+        string? voiceRecordingUrl = null,
+        bool speakAloud = false,
         CancellationToken cancellation = default)
     {
         var batch = new MessageBatch
         {
             Subject = string.IsNullOrWhiteSpace(subject) ? null : subject,
             Body = body,
+            VoiceRecordingPath = voiceRecordingUrl,
             AudienceDescription = audienceDescription,
         };
         db.MessageBatches.Add(batch);
@@ -61,7 +64,9 @@ public sealed class BroadcastService(CourierDbContext db, IReadOnlyDictionary<Ch
             else
             {
                 var outcome = await sender.SendAsync(
-                    reach.Address!, new OutgoingMessage(subject, body), cancellation);
+                    reach.Address!,
+                    new OutgoingMessage(subject, body, voiceRecordingUrl, speakAloud),
+                    cancellation);
 
                 delivery.Status = outcome.Status switch
                 {

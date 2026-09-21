@@ -19,9 +19,11 @@ Built for one person on one computer, with no server and no account to sign into
    makes it survive every future import and what puts it on the **To enter in LCR**
    list, so the official record can catch up. That list clears itself once an export
    comes back carrying the detail.
-3. **Send.** Write a message once. It goes out by e-mail, text, or a recording played
-   over a phone call, split by what each person chose — or all one way, when something
-   is urgent enough to text everybody.
+3. **Send.** Write a message once. It goes out by e-mail, text, or a phone call,
+   split by what each person chose — or all one way, when something is urgent enough to
+   text everybody. Calls read the message out, or play a recording of you reading it,
+   chosen per message. Either way you can have Courier ring you first and play back
+   exactly what everyone else will hear.
 
 ## Setting it up
 

@@ -124,6 +124,30 @@ public sealed partial class SendViewModel(AppServices services, ISettingsStore s
     [ObservableProperty] private string _lengthLine = "";
     [ObservableProperty] private string _senderLine = "";
 
+    // --- how the people who prefer a call will hear this -------------------------
+    [ObservableProperty] private bool _speakAloud = true;
+    [ObservableProperty] private string _recordingUrl = "";
+    [ObservableProperty] private string _voiceStatus = "";
+    [ObservableProperty] private bool _voiceBusy;
+
+    public bool UseMyVoice
+    {
+        get => !SpeakAloud;
+        set => SpeakAloud = !value;
+    }
+
+    public bool HasRecording => RecordingUrl.Length > 0;
+
+    partial void OnSpeakAloudChanged(bool value)
+    {
+        OnPropertyChanged(nameof(UseMyVoice));
+        VoiceStatus = value
+            ? "Twilio will read the message out."
+            : HasRecording ? "Your recording will play." : "Record yourself reading it, then it will play.";
+    }
+
+    partial void OnRecordingUrlChanged(string value) => OnPropertyChanged(nameof(HasRecording));
+
     [ObservableProperty] private string _matchLine = "";
     [ObservableProperty] private string _selectedLine = "";
     [ObservableProperty] private int _emailCount;
@@ -168,12 +192,88 @@ public sealed partial class SendViewModel(AppServices services, ISettingsStore s
         await using var db = services.Db();
         _all = await new DirectoryService(db).RecipientsAsync();
         Loaded = true;
+        OnSpeakAloudChanged(SpeakAloud);
         CheckRoute();
         Refresh();
         RefreshMessage();
     }
 
-    partial void OnBodyChanged(string value) => RefreshMessage();
+    partial void OnBodyChanged(string value)
+    {
+        // The message is the script. Once it changes, a recording of the old wording is
+        // worse than none — it would go out sounding confident and be wrong.
+        if (HasRecording)
+        {
+            RecordingUrl = "";
+            VoiceStatus = "The message changed, so the recording was cleared. Record it again before sending.";
+        }
+
+        RefreshMessage();
+    }
+
+    /// <summary>Rings the user, reads them the message so they are not improvising, and
+    /// records them reading it. Waits for the recording rather than making them press
+    /// another button at exactly the right moment.</summary>
+    [RelayCommand]
+    private async Task RecordVoiceAsync()
+    {
+        VoiceBusy = true;
+        try
+        {
+            var settings = store.Load();
+            var sender = new VoiceSender(new TwilioGateway(settings.Twilio), settings.Twilio);
+            var session = await sender.StartRecordingAsync(Signed);
+
+            if (session is null || session.CallSid.Length == 0)
+            {
+                VoiceStatus = session?.Message ?? "Fill in your Twilio details and your own number on the Setup screen first.";
+                return;
+            }
+
+            VoiceStatus = session.Message + " Courier will pick it up once you hang up.";
+
+            for (var attempt = 0; attempt < 60; attempt++)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(3));
+                var url = await sender.CollectRecordingAsync(session.CallSid);
+                if (url is null) continue;
+
+                RecordingUrl = url;
+                SpeakAloud = false;
+                VoiceStatus = "Got it. That is what the people who prefer a call will hear.";
+                return;
+            }
+
+            VoiceStatus = "Courier did not get a recording. Try again, and read the message after the beep before hanging up.";
+        }
+        finally { VoiceBusy = false; }
+    }
+
+    /// <summary>Calls the user and plays exactly what everyone else would hear.</summary>
+    [RelayCommand]
+    private async Task PreviewVoiceAsync()
+    {
+        VoiceBusy = true;
+        try
+        {
+            var settings = store.Load();
+            if (settings.Twilio.TestNumber.Trim().Length == 0)
+            {
+                VoiceStatus = "Add your own mobile number on the Setup screen so Courier knows where to call.";
+                return;
+            }
+
+            var sender = new VoiceSender(new TwilioGateway(settings.Twilio), settings.Twilio);
+            var outcome = await sender.PreviewAsync(
+                settings.Twilio.TestNumber.Trim(),
+                new OutgoingMessage(Subject, Signed, HasRecording ? RecordingUrl : null, SpeakAloud));
+
+            VoiceStatus = outcome.Status == SendStatus.Sent
+                ? $"Calling {PhoneFormat.ForDisplay(settings.Twilio.TestNumber)} now — answer it to hear what they will hear."
+                : outcome.Error ?? "Courier could not place the call.";
+        }
+        finally { VoiceBusy = false; }
+    }
 
     partial void OnSendViaChanged(string value) => Summarise();
 
@@ -368,7 +468,9 @@ public sealed partial class SendViewModel(AppServices services, ISettingsStore s
             var progress = new Progress<BroadcastProgress>(p =>
                 Status = $"Sending… {p.Done} of {p.Total} ({p.Who})");
 
-            var batch = await service.SendAsync(Subject, Signed, Describe(chosen.Count), chosen, progress, Override);
+            var batch = await service.SendAsync(
+                Subject, Signed, Describe(chosen.Count), chosen, progress, Override,
+                HasRecording ? RecordingUrl : null, SpeakAloud);
 
             var sent = await CountAsync(db, batch.Id, Entities.DeliveryStatus.Sent);
             var failed = await CountAsync(db, batch.Id, Entities.DeliveryStatus.Failed);
