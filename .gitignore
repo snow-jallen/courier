@@ -1,0 +1,12 @@
+bin/
+obj/
+*.user
+.DS_Store
+
+# Real LCR exports and anything derived from them never enter version control.
+# They hold home addresses, phone numbers and birthdays for hundreds of people.
+tests/Courier.Tests/Fixtures/private/
+*.db
+*.db-shm
+*.db-wal
+settings.json

@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Courier.App/Courier.App.csproj" />
+    <Project Path="src/Courier.Core/Courier.Core.csproj" />
+    <Project Path="src/Courier.Data/Courier.Data.csproj" />
+    <Project Path="src/Courier.Messaging/Courier.Messaging.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Courier.Tests/Courier.Tests.csproj" />
+  </Folder>
+</Solution>
