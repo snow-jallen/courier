@@ -148,7 +148,7 @@
 
           <Border Background="{DynamicResource AccentSoft}" CornerRadius="8" Padding="12,10">
             <TextBlock TextWrapping="Wrap" FontSize="12.5" Foreground="{DynamicResource AccentInk}"
-                       Text="Texting everyone costs a few dollars, plus about $1.15 a month for the number. Twilio bills only what you send."/>
+                       Text="Texting everyone costs a few dollars, plus about $1.15 a month for the number. Twilio bills only what you send. To check the setup without messaging anyone, use the Test credentials from your Twilio console and put +15005550006 as your own number — Twilio accepts it and delivers nothing."/>
           </Border>
 
           <Border Background="{DynamicResource ChVoiceSoft}" CornerRadius="8" Padding="12,10">
