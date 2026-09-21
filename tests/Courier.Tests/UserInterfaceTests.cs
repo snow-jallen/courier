@@ -316,6 +316,40 @@ public sealed class UserInterfaceTests : IDisposable
             Assert.Equal("+14355550150", row.Person.Phone);
         }, _folder);
 
+    [Fact]
+    public Task Setup_says_whether_it_needs_saving_without_anyone_scrolling_to_find_out() =>
+        InWindow(async (window, model) =>
+        {
+            model.ShowSetup();
+            var setup = (SetupViewModel)model.Current;
+
+            Assert.False(setup.IsDirty);
+            Assert.Equal("Everything here is saved.", setup.SaveHint);
+
+            setup.SenderName = "Jonathan Allen";
+            Assert.True(setup.IsDirty);
+            Assert.Contains("not saved", setup.SaveHint, StringComparison.Ordinal);
+
+            setup.SaveCommand.Execute(null);
+            Assert.False(setup.IsDirty);
+
+            // Typing in any of the other fields marks it too, without each one having
+            // to be wired up by hand.
+            setup.GatewayUrl = "http://192.168.1.44:8080";
+            Assert.True(setup.IsDirty);
+
+            // And the Save button is not inside the part that scrolls.
+            Resize(window, 1000, 700);
+            var scroller = window.GetVisualDescendants().OfType<ScrollViewer>()
+                .First(s => s.Extent.Height > s.Viewport.Height);
+            var save = window.GetVisualDescendants().OfType<Button>()
+                .First(b => Equals(b.Content, "Save"));
+
+            Assert.False(save.GetVisualAncestors().Contains(scroller),
+                "the Save button is inside the scrolling area, so it can be scrolled out of sight");
+            await Task.CompletedTask;
+        }, _folder);
+
     public void Dispose()
     {
         Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();

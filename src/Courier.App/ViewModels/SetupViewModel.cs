@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Courier.Messaging;
@@ -44,6 +45,7 @@ public sealed partial class SetupViewModel : ObservableObject
         _recordingUrl = settings.Twilio.VoiceRecordingUrl;
         _databasePath = services.DatabasePath;
         _settingsPath = store.Path;
+        _saved = settings;
     }
 
     // --- where the directory lives ---------------------------------------------
@@ -136,6 +138,38 @@ public sealed partial class SetupViewModel : ObservableObject
 
     public bool HasRecording => RecordingUrl.Length > 0;
 
+    /// <summary>What was last written to disk. Everything on this screen is compared
+    /// against it, so the Save button can say whether it needs pressing instead of
+    /// leaving somebody to wonder.</summary>
+    private CourierSettings _saved;
+
+    public bool IsDirty => Current != _saved;
+
+    public string SaveHint => IsDirty
+        ? "You have changes that are not saved yet."
+        : "Everything here is saved.";
+
+    private static readonly string[] NotWorthRechecking =
+        [nameof(IsDirty), nameof(SaveHint), nameof(EmailStatus), nameof(TwilioStatus),
+         nameof(BackupStatus), nameof(EmailBusy), nameof(TwilioBusy), nameof(EmailOk), nameof(TwilioOk)];
+
+    /// <summary>Any field changing can make the screen dirty, and there are a lot of
+    /// fields. Watching them all in one place beats remembering to add each new one.</summary>
+    protected override void OnPropertyChanged(PropertyChangedEventArgs e)
+    {
+        base.OnPropertyChanged(e);
+        if (e.PropertyName is null || NotWorthRechecking.Contains(e.PropertyName)) return;
+        OnPropertyChanged(nameof(IsDirty));
+        OnPropertyChanged(nameof(SaveHint));
+    }
+
+    private void MarkSaved()
+    {
+        _saved = Current;
+        OnPropertyChanged(nameof(IsDirty));
+        OnPropertyChanged(nameof(SaveHint));
+    }
+
     private CourierSettings Current => new()
     {
         TextVia = TextVia,
@@ -170,8 +204,7 @@ public sealed partial class SetupViewModel : ObservableObject
     private void Save()
     {
         _store.Save(Current);
-        EmailStatus = "Saved.";
-        TwilioStatus = "Saved.";
+        MarkSaved();
     }
 
     [RelayCommand]
@@ -182,6 +215,7 @@ public sealed partial class SetupViewModel : ObservableObject
         try
         {
             _store.Save(Current);
+            MarkSaved();
             var sender = new EmailSender(new SmtpTransport(), Current.Email);
             var check = await sender.TestAsync("");
             EmailOk = check.Ok;
@@ -198,6 +232,7 @@ public sealed partial class SetupViewModel : ObservableObject
         try
         {
             _store.Save(Current);
+            MarkSaved();
             IMessageSender sender = TextVia switch
             {
                 TextTransport.MacMessages => new MessagesTextSender(new AppleScriptRunner()),
@@ -221,6 +256,7 @@ public sealed partial class SetupViewModel : ObservableObject
         try
         {
             _store.Save(Current);
+            MarkSaved();
             var sender = new VoiceSender(new TwilioGateway(Current.Twilio), Current.Twilio);
             var session = await sender.StartRecordingAsync();
 
@@ -244,6 +280,7 @@ public sealed partial class SetupViewModel : ObservableObject
                 RecordingUrl = url;
                 OnPropertyChanged(nameof(HasRecording));
                 _store.Save(Current);
+                MarkSaved();
                 TwilioOk = true;
                 TwilioStatus = "Got it. That recording is what people who prefer a call will hear.";
                 return;
@@ -262,6 +299,7 @@ public sealed partial class SetupViewModel : ObservableObject
         try
         {
             _store.Save(Current);
+            MarkSaved();
             var sender = new VoiceSender(new TwilioGateway(Current.Twilio), Current.Twilio);
             var check = await sender.TestAsync("");
             TwilioOk = check.Ok;
