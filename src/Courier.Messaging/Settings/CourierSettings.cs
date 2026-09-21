@@ -59,8 +59,27 @@ public enum TextTransport
 
     /// <summary>The Messages app on this Mac, which sends over the user's own line —
     /// their real number, replies in their own Messages app. Meant for a ward or a
-    /// committee rather than the whole directory.</summary>
+    /// committee rather than the whole directory. iPhone owners with a Mac.</summary>
     MacMessages = 2,
+
+    /// <summary>A gateway app on the user's own Android phone, which Courier asks over
+    /// the local network. Same idea as the Mac route and the same limits, but it works
+    /// from any computer and needs no Mac.</summary>
+    AndroidGateway = 3,
+}
+
+/// <summary>The SMS Gateway app running on the user's Android phone, in local-server
+/// mode — the phone answers on the home network and nothing leaves it for anyone
+/// else's server, which matters when the payload is 427 people's phone numbers.</summary>
+public sealed record AndroidGatewaySettings
+{
+    /// <summary>What the app shows as its local address, e.g. http://192.168.1.44:8080</summary>
+    public string BaseUrl { get; init; } = "";
+
+    public string Username { get; init; } = "";
+    public string Password { get; init; } = "";
+
+    public bool IsComplete => BaseUrl.Trim().Length > 0 && Username.Length > 0 && Password.Length > 0;
 }
 
 public sealed record CourierSettings
@@ -72,6 +91,7 @@ public sealed record CourierSettings
     public SenderIdentity Sender { get; init; } = SenderIdentity.Unknown;
 
     public EmailSettings Email { get; init; } = new();
+    public AndroidGatewaySettings AndroidGateway { get; init; } = new();
     public TwilioSettings Twilio { get; init; } = new();
 
     /// <summary>Supplied when the report prints a seven-digit number. Sanpete County.</summary>

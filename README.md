@@ -12,7 +12,9 @@ Built for one person on one computer, with no server and no account to sign into
    reads it, compares it against what it already holds, and shows exactly what would
    change before anything is written. People who drop out of an export are marked
    inactive, never deleted.
-2. **Keep.** Correct anyone's email, phone or address on the People screen. Courier
+2. **Keep.** Add people the export does not carry, and correct anyone's email, phone
+   or address on the People screen. Somebody added by hand is never removed by an
+   import, because their absence from an export says nothing about them. Courier
    never writes over what the export said — it records the correction, which is what
    makes it survive every future import and what puts it on the **To enter in LCR**
    list, so the official record can catch up. That list clears itself once an export
@@ -70,17 +72,30 @@ because each message really is its own message.
 
 ### Can the texts come from your own number?
 
-**On a Mac, yes — through the Messages app.** Setup can send texts by asking Messages to
+**Yes, through your own phone — and which phone decides how.** Setup has a toggle:
+
+- **iPhone** — Courier asks the Messages app on your Mac to send. **This only works with
+  Courier running on a Mac**; Messages exists nowhere else, so on Windows or Linux the
+  option is refused rather than accepted and then failing at the moment you press Send.
+- **Android** — install [SMS Gateway for Android](https://sms-gate.app/), turn on Local
+  Server, and paste the address and sign-in it shows into Setup. Courier then asks your
+  phone over your own Wi-Fi. This works from any computer, and in local-server mode the
+  numbers never leave your network.
+
+Either way it is the same arrangement as Phone Link: the computer asks, the phone's own
+line delivers.
+
+**On a Mac with an iPhone, in detail:** Setup can send texts by asking Messages to
 send them, which is how Phone Link works on Windows: the computer asks, the phone's own
 line delivers. Messages then genuinely come from your number and replies arrive in your
 own Messages app. Messages must be open and signed in, your iPhone needs Text Message
 Forwarding switched on for that Mac, and macOS will ask once for permission to control
 Messages.
 
-The catch is that a personal line is meant for person-to-person texting. A burst of
-hundreds is exactly what carrier spam systems look for, and it goes out at about one
-message every two seconds. **Keep it to a few dozen** — a ward, a committee, the people
-who did not reply — and use Twilio for the whole directory.
+The catch, for both phones, is that a personal line is meant for person-to-person
+texting. A burst of hundreds is exactly what carrier spam systems look for, and it goes
+out at roughly one message every two seconds. **Keep it to a few dozen** — a ward, a
+committee, the people who did not reply — and use Twilio for the whole directory.
 
 **Through a service, no.** Verify your mobile in the Twilio console as a caller ID and outgoing
 calls show *your* number. People see you ringing, and returning the call reaches you

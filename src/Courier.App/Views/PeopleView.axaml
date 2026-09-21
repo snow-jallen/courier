@@ -5,11 +5,15 @@
              x:DataType="vm:PeopleViewModel">
 
   <Grid Margin="28,26,28,24" RowDefinitions="Auto,Auto,Auto,*,Auto">
-    <StackPanel Grid.Row="0">
+    <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+    <StackPanel Grid.Column="0">
     <TextBlock Classes="h2" Text="People"/>
     <TextBlock Classes="lede" Margin="0,4,0,0"
                Text="Choose how each person prefers to hear from you. That choice is yours, not LCR's — importing again never resets it."/>
     </StackPanel>
+    <Button Grid.Column="1" Classes="primary" Content="+ Add someone" VerticalAlignment="Top"
+            Command="{Binding AddPersonCommand}"/>
+    </Grid>
 
     <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Margin="0,18,0,12" ColumnSpacing="9">
       <TextBox Grid.Column="0" PlaceholderText="Search a name, email or phone"
@@ -86,10 +90,28 @@
             IsVisible="{Binding IsEditing}" VerticalAlignment="Stretch">
       <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel Spacing="12" DataContext="{Binding Editing}">
-          <StackPanel Spacing="2">
+          <StackPanel Spacing="2" IsVisible="{Binding !IsNew}">
             <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="15"
                        Foreground="{DynamicResource Ink}" TextWrapping="Wrap"/>
             <TextBlock Text="{Binding Ward}" FontSize="12" Foreground="{DynamicResource Ink3}"/>
+          </StackPanel>
+
+          <StackPanel Spacing="12" IsVisible="{Binding IsNew}">
+            <TextBlock Text="Add someone" FontWeight="SemiBold" FontSize="15"
+                       Foreground="{DynamicResource Ink}"/>
+            <StackPanel Spacing="6">
+              <TextBlock Classes="eyebrow" Text="SURNAME"/>
+              <TextBox Text="{Binding LastName}" PlaceholderText="Winslade"/>
+            </StackPanel>
+            <StackPanel Spacing="6">
+              <TextBlock Classes="eyebrow" Text="GIVEN NAME"/>
+              <TextBox Text="{Binding FirstName}" PlaceholderText="Verity"/>
+            </StackPanel>
+            <StackPanel Spacing="6">
+              <TextBlock Classes="eyebrow" Text="WARD"/>
+              <ComboBox HorizontalAlignment="Stretch" ItemsSource="{Binding WardOptions}"
+                        SelectedItem="{Binding WardChoice}"/>
+            </StackPanel>
           </StackPanel>
 
           <StackPanel Spacing="6">
@@ -112,7 +134,13 @@
 
           <Border Background="{DynamicResource AccentSoft}" CornerRadius="8" Padding="11,9">
             <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource AccentInk}"
+                       IsVisible="{Binding !IsNew}"
                        Text="Anything you change here is kept through the next import and added to the “To enter in LCR” list, so the official record can catch up. The note stays here and goes nowhere."/>
+          </Border>
+          <Border Background="{DynamicResource AccentSoft}" CornerRadius="8" Padding="11,9"
+                  IsVisible="{Binding IsNew}">
+            <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource AccentInk}"
+                       Text="Somebody you add is not in the export, so no import will ever decide they have left. Their details go on the “To enter in LCR” list. If a later export does carry them, Courier recognises them and they become part of the directory proper."/>
           </Border>
 
           <StackPanel Orientation="Horizontal" Spacing="8">

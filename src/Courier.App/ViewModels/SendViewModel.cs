@@ -6,6 +6,7 @@ using Courier.Data;
 using Courier.Messaging;
 using Courier.Messaging.Email;
 using Courier.Messaging.Settings;
+using Courier.Messaging.Android;
 using Courier.Messaging.Mac;
 using Courier.Messaging.Twilio;
 using Entities = Courier.Data.Entities;
@@ -81,8 +82,11 @@ public sealed partial class SendRow : ObservableObject
         ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 }
 
-public sealed partial class SendViewModel(AppServices services, ISettingsStore store) : ObservableObject
+public sealed partial class SendViewModel(AppServices services, ISettingsStore store, bool? isMac = null)
+    : ObservableObject
 {
+    private readonly bool _isMac = isMac ?? OperatingSystem.IsMacOS();
+
     private const decimal TextCost = 0.0079m;
     private const decimal CallCost = 0.014m;
 
@@ -126,6 +130,21 @@ public sealed partial class SendViewModel(AppServices services, ISettingsStore s
     [ObservableProperty] private string _status = "";
     [ObservableProperty] private bool _sending;
     [ObservableProperty] private bool _loaded;
+    [ObservableProperty] private string _blockedReason = "";
+
+    public bool IsBlocked => BlockedReason.Length > 0;
+
+    partial void OnBlockedReasonChanged(string value) => OnPropertyChanged(nameof(IsBlocked));
+
+    /// <summary>Refuses the send outright rather than letting every message fail one at
+    /// a time — the saved route is an iPhone, and this is not a Mac.</summary>
+    private void CheckRoute()
+    {
+        var settings = store.Load();
+        BlockedReason = settings.TextVia == TextTransport.MacMessages && !_isMac
+            ? "Texts cannot go out from this computer: Courier is set to send from your iPhone, which needs to run on a Mac. Open Setup and choose Twilio, or your Android phone."
+            : "";
+    }
 
     public ObservableCollection<SendRow> Rows { get; } = [];
     public IReadOnlyList<string> WardOptions { get; } = [AllWards, .. Wards.All];
@@ -142,6 +161,7 @@ public sealed partial class SendViewModel(AppServices services, ISettingsStore s
         await using var db = services.Db();
         _all = await new DirectoryService(db).RecipientsAsync();
         Loaded = true;
+        CheckRoute();
         Refresh();
         RefreshMessage();
     }
@@ -309,6 +329,13 @@ public sealed partial class SendViewModel(AppServices services, ISettingsStore s
     [RelayCommand]
     private async Task SendAsync()
     {
+        CheckRoute();
+        if (IsBlocked)
+        {
+            Status = BlockedReason;
+            return;
+        }
+
         var chosen = Chosen;
         if (chosen.Count == 0 || string.IsNullOrWhiteSpace(Body)) return;
 
@@ -319,9 +346,13 @@ public sealed partial class SendViewModel(AppServices services, ISettingsStore s
             var senders = new Dictionary<Core.Domain.Channel, IMessageSender>
             {
                 [Core.Domain.Channel.Email] = new EmailSender(new SmtpTransport(), settings.Email),
-                [Core.Domain.Channel.Text] = settings.TextVia == TextTransport.MacMessages
-                    ? new MessagesTextSender(new AppleScriptRunner())
-                    : new TextSender(new TwilioGateway(settings.Twilio), settings.Twilio),
+                [Core.Domain.Channel.Text] = settings.TextVia switch
+                {
+                    TextTransport.MacMessages => new MessagesTextSender(new AppleScriptRunner()),
+                    TextTransport.AndroidGateway =>
+                        new AndroidGatewayTextSender(new HttpClient(), settings.AndroidGateway),
+                    _ => new TextSender(new TwilioGateway(settings.Twilio), settings.Twilio),
+                },
                 [Core.Domain.Channel.Voice] = new VoiceSender(new TwilioGateway(settings.Twilio), settings.Twilio),
             };
 

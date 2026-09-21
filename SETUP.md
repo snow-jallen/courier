@@ -132,6 +132,47 @@ shows the progress.
 
 ---
 
+## Part 3b · Optional: texting from your own phone instead
+
+Parts 2 and 3 set up Twilio, which reaches everybody but sends from a number nobody
+recognises. Courier can also send texts through **your own phone**, the way Phone Link
+does on Windows: the computer asks, your phone's line delivers. Messages then genuinely
+come from your number, and replies arrive in your own Messages app.
+
+Use it for a ward, a committee, or the handful who did not reply. **Not for all 427** —
+a burst of hundreds from a personal line is what carriers throttle, and it sends at
+about one message every two seconds.
+
+On the Setup screen, under *Where texts go out from*, choose your phone.
+
+### If you have an iPhone
+
+**Courier must be running on a Mac.** The iPhone route works by asking the Messages app
+to send, and Messages only exists on macOS — on Windows or Linux the option is greyed
+out, and a setting carried over from a Mac is blocked with an explanation rather than
+failing once for every person.
+
+1. On the Mac, open **Messages** and make sure you are signed in.
+2. On the iPhone: **Settings → Apps → Messages → Text Message Forwarding**, and switch
+   on the Mac. Without this, green-bubble texts to people without iMessage will not go.
+3. In Courier, choose *From my iPhone* and press **Send myself a test text**.
+4. macOS will ask whether Courier may control Messages. Say yes. If you miss the prompt,
+   it is **System Settings → Privacy & Security → Automation → Courier → Messages**.
+
+### If you have an Android phone
+
+Works from any computer — Courier just makes a web request to your phone.
+
+1. Install **SMS Gateway for Android** from <https://sms-gate.app>.
+2. Open it, switch **Local Server** on, and tap the **Offline** button to start it.
+3. The app shows an **address** (like `http://192.168.1.44:8080`) and a **username and
+   password**. Copy all three into Courier.
+4. Press **Send myself a test text**.
+
+The phone must be awake and on the same Wi-Fi as the computer. Its address changes when
+it rejoins the network, so if sending stops working, check that first. In this mode
+nothing goes through anybody else's server — the numbers stay on your own network.
+
 ## Part 4 · Making calls show *your* number
 
 By default a call from Courier shows your Twilio number. You can make it show your real

@@ -2,6 +2,16 @@ using Courier.Core.Domain;
 
 namespace Courier.Data.Entities;
 
+public enum PersonSource
+{
+    /// <summary>Came from an LCR export.</summary>
+    Lcr = 1,
+
+    /// <summary>Added by hand. Never appears in an export, so an import must not treat
+    /// their absence from one as having left.</summary>
+    Local = 2,
+}
+
 public class Person
 {
     public Guid Id { get; set; } = Guid.NewGuid();
@@ -29,6 +39,10 @@ public class Person
     // --- Fields Courier owns. An import never touches these. ------------------------
     public Channel PreferredChannel { get; set; } = Channel.None;
     public string? Notes { get; set; }
+
+    /// <summary>Where this person came from. An import may only deactivate people it
+    /// put there itself.</summary>
+    public PersonSource Source { get; set; } = PersonSource.Lcr;
 
     // --- Soft delete ----------------------------------------------------------------
     /// <summary>False once someone stops appearing in the export. Rows are never

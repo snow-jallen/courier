@@ -22,10 +22,7 @@ public sealed class DirectoryServiceTests : IDisposable
     /// importing twice updates people rather than duplicating them.</summary>
     private static async Task SeedAsync(CourierDbContext db, params NormalizedPerson[] people)
     {
-        var existing = await db.People
-            .Select(p => new ExistingPerson(p.Id, p.LastName, p.FirstName, p.BirthMonth, p.BirthDay,
-                p.Ward, p.Age, p.Address, p.LcrEmail, p.LcrPhone, p.IsActive))
-            .ToListAsync();
+        var existing = await DirectoryService.ExistingPeople(db).ToListAsync();
         var plan = ImportPlanner.Plan(people, existing);
         await new ImportService(db).ApplyAsync(
             new LcrReport([], 1, "seed.pdf", new string('a', 64)), plan, Today);
@@ -239,6 +236,78 @@ public sealed class DirectoryServiceTests : IDisposable
 
         Assert.Equal("better@example.com", (await service.RecipientsAsync()).Single().Email);
         Assert.Single(await service.PendingLcrEntriesAsync());
+    }
+
+    // ---- people who are not in the export ------------------------------------------
+
+    [Fact]
+    public async Task Somebody_can_be_added_who_was_never_in_the_export()
+    {
+        using var db = Open();
+        var service = new DirectoryService(db);
+
+        await service.AddPersonAsync("Winslade", "Verity", "5th", "verity@example.com",
+            "(435) 555-0150", "9 Elm Street", "Met at the stake activity", Today);
+
+        var person = Assert.Single(await service.RecipientsAsync());
+        Assert.Equal("Winslade, Verity", person.SortName);
+        Assert.Equal("Manti 5th Ward", person.Ward);
+        Assert.Equal("verity@example.com", person.Email);
+        Assert.Equal("+14355550150", person.Phone);
+        Assert.Equal("9 Elm Street", person.Address);
+    }
+
+    [Fact]
+    public async Task An_import_never_decides_a_hand_added_person_has_left()
+    {
+        using var db = Open();
+        var service = new DirectoryService(db);
+        await service.AddPersonAsync("Winslade", "Verity", "Manti 5th Ward", null, "555-0150", null, null, Today);
+
+        // An export that has never heard of her, twice over.
+        await SeedAsync(db, Person("Ashgrove", "Adelaide"));
+        await SeedAsync(db, Person("Ashgrove", "Adelaide"));
+
+        var verity = await db.People.FirstAsync(p => p.LastName == "Winslade");
+        Assert.True(verity.IsActive);
+        Assert.Null(verity.DeactivatedOn);
+        Assert.Equal(2, (await service.RecipientsAsync()).Count);
+    }
+
+    [Fact]
+    public async Task Once_lcr_carries_them_they_become_lcr_s_to_manage()
+    {
+        using var db = Open();
+        var service = new DirectoryService(db);
+        await service.AddPersonAsync("Winslade", "Verity", "Manti 5th Ward", null, "555-0150", null, null, Today);
+
+        // The next export includes her, matched on name.
+        await SeedAsync(db, Person("Winslade", "Verity", phone: "555-0150"));
+        Assert.Equal(PersonSource.Lcr, (await db.People.SingleAsync()).Source);
+
+        // So a later export that drops her now means what it says.
+        await SeedAsync(db, Person("Ashgrove", "Adelaide"));
+        Assert.False((await db.People.FirstAsync(p => p.LastName == "Winslade")).IsActive);
+    }
+
+    [Fact]
+    public async Task What_you_typed_about_a_new_person_is_waiting_for_lcr()
+    {
+        using var db = Open();
+        var service = new DirectoryService(db);
+        await service.AddPersonAsync("Winslade", "Verity", null, "verity@example.com", "555-0150", null, null, Today);
+
+        var pending = await service.PendingLcrEntriesAsync();
+        Assert.Equal(2, pending.Count);
+        Assert.All(pending, p => Assert.Equal("Winslade, Verity", p.PersonName));
+    }
+
+    [Fact]
+    public async Task A_person_needs_at_least_a_surname()
+    {
+        using var db = Open();
+        await Assert.ThrowsAsync<ArgumentException>(
+            () => new DirectoryService(db).AddPersonAsync("  ", "Verity", null, null, null, null, null, Today));
     }
 
     public void Dispose()

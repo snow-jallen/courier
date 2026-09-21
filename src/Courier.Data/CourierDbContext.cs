@@ -35,6 +35,8 @@ public class CourierDbContext(DbContextOptions<CourierDbContext> options) : DbCo
             e.HasIndex(p => p.Ward);
 
             // Enums are stored by name so a future channel cannot renumber existing rows.
+            e.Property(p => p.Source).HasConversion<string>().HasMaxLength(16);
+
             e.Property(p => p.PreferredChannel)
                 .HasConversion(v => v.ToWire(), v => Channels.FromWire(v))
                 .HasMaxLength(16);

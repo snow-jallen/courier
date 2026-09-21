@@ -284,6 +284,38 @@ public sealed class UserInterfaceTests : IDisposable
             Assert.Equal("Send to 1 person", send.SendLabel);
         }, _folder);
 
+    [Fact]
+    public Task Somebody_the_export_does_not_carry_can_be_added_from_the_people_screen() =>
+        InWindow(async (_, model) =>
+        {
+            await model.ShowPeopleAsync();
+            var people = (PeopleViewModel)model.Current;
+            Assert.Empty(people.Rows);
+
+            people.AddPersonCommand.Execute(null);
+            var editor = Assert.IsType<PersonEditor>(people.Editing);
+            Assert.True(editor.IsNew);
+
+            // A surname is the one thing required, since it is what the list sorts on.
+            await editor.SaveCommand.ExecuteAsync(null);
+            Assert.Contains("surname is needed", editor.Status, StringComparison.Ordinal);
+            Assert.NotNull(people.Editing);
+
+            editor.LastName = "Winslade";
+            editor.FirstName = "Verity";
+            editor.WardChoice = "Manti 5th Ward";
+            editor.Phone = "(435) 555-0150";
+            await editor.SaveCommand.ExecuteAsync(null);
+
+            Assert.Null(people.Editing);
+            Assert.Contains("no import will remove them", people.EditStatus, StringComparison.Ordinal);
+
+            var row = Assert.Single(people.Rows);
+            Assert.Equal("Winslade, Verity", row.Name);
+            Assert.Equal("Manti 5th Ward", row.Ward);
+            Assert.Equal("+14355550150", row.Person.Phone);
+        }, _folder);
+
     public void Dispose()
     {
         Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();

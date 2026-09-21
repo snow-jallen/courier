@@ -144,9 +144,14 @@
             </StackPanel>
           </Border>
         </StackPanel>
+        <Border Classes="notice privacy" IsVisible="{Binding IsBlocked}">
+          <TextBlock Text="{Binding BlockedReason}" TextWrapping="Wrap" FontSize="12.5"
+                     Foreground="{DynamicResource Ink2}"/>
+        </Border>
         <StackPanel Orientation="Horizontal" Spacing="9">
           <Button Classes="primary" Content="{Binding SendLabel}"
-                  Command="{Binding SendCommand}" IsEnabled="{Binding !Sending}"/>
+                  Command="{Binding SendCommand}" IsEnabled="{Binding !Sending}"
+                  IsVisible="{Binding !IsBlocked}"/>
         </StackPanel>
         <TextBlock Text="{Binding Status}" TextWrapping="Wrap" FontSize="12.5"
                    Foreground="{DynamicResource Ink2}"/>
