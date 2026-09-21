@@ -21,10 +21,20 @@ public sealed partial class SetupViewModel : ObservableObject
 
     /// <summary><paramref name="isMac"/> is only passed by tests; the app reads the
     /// platform it is actually running on.</summary>
-    public SetupViewModel(AppServices services, ISettingsStore store, bool? isMac = null)
+    private readonly IDatabasePicker? _databases;
+    private readonly Action? _databaseChanged;
+
+    public SetupViewModel(
+        AppServices services,
+        ISettingsStore store,
+        bool? isMac = null,
+        IDatabasePicker? databases = null,
+        Action? databaseChanged = null)
     {
         _services = services;
         _store = store;
+        _databases = databases;
+        _databaseChanged = databaseChanged;
         _isMac = isMac ?? OperatingSystem.IsMacOS();
 
         var settings = store.Load();
@@ -185,6 +195,7 @@ public sealed partial class SetupViewModel : ObservableObject
 
     private CourierSettings Current => new()
     {
+        DatabasePath = DatabasePath,
         TextVia = TextVia,
         AndroidGateway = new AndroidGatewaySettings
         {
@@ -274,6 +285,52 @@ public sealed partial class SetupViewModel : ObservableObject
             TwilioStatus = check.Message;
         }
         finally { TwilioBusy = false; }
+    }
+
+    public bool CanBrowseForDatabase => _databases is not null;
+
+    [RelayCommand]
+    private Task OpenDatabaseAsync() => SwitchAsync(existing: true);
+
+    [RelayCommand]
+    private Task NewDatabaseAsync() => SwitchAsync(existing: false);
+
+    /// <summary>Opens a different directory file, or starts one somewhere else. The
+    /// chosen file has to be a Courier database before it becomes the open one —
+    /// finding out afterwards would mean the app is already pointed at it.</summary>
+    private async Task SwitchAsync(bool existing)
+    {
+        if (_databases is null) return;
+
+        var path = existing ? await _databases.PickExistingAsync() : await _databases.PickNewAsync();
+        if (path is null) return;
+
+        if (string.Equals(path, _services.DatabasePath, StringComparison.Ordinal))
+        {
+            BackupStatus = "That is the file already open.";
+            return;
+        }
+
+        var previous = _services.DatabasePath;
+        try
+        {
+            _services.SwitchTo(path);
+        }
+        catch (Exception e)
+        {
+            BackupStatus = $"That file could not be opened as a Courier directory, so nothing changed. {e.Message}";
+            return;
+        }
+
+        _store.Save(Current with { DatabasePath = path });
+        DatabasePath = path;
+        MarkSaved();
+
+        BackupStatus = existing
+            ? $"Opened {Path.GetFileName(path)}. The previous file at {previous} is untouched."
+            : $"Started a new, empty directory at {Path.GetFileName(path)}. Import an LCR export to fill it.";
+
+        _databaseChanged?.Invoke();
     }
 
     [RelayCommand]

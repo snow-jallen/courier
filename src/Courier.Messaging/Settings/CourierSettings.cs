@@ -79,6 +79,10 @@ public sealed record AndroidGatewaySettings
 
 public sealed record CourierSettings
 {
+    /// <summary>Where the directory file is kept. Empty means the usual place. Stored
+    /// here rather than in the database for the obvious reason.</summary>
+    public string DatabasePath { get; init; } = "";
+
     public TextTransport TextVia { get; init; } = TextTransport.Twilio;
 
     /// <summary>Whose messages these are. Courier augments one person's calling rather

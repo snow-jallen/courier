@@ -5,12 +5,16 @@ namespace Courier.App.ViewModels;
 
 public sealed partial class MainWindowViewModel : ObservableObject
 {
+    private readonly AppServices _services;
+    private readonly IFilePicker _picker;
+    private readonly IClipboardWriter _clipboard;
     private readonly ISettingsStore _store;
-    private readonly ImportViewModel _import;
-    private readonly PeopleViewModel _people;
-    private readonly SendViewModel _send;
-    private readonly LcrBacklogViewModel _lcr;
-    private readonly SetupViewModel _setup;
+
+    private ImportViewModel _import = null!;
+    private PeopleViewModel _people = null!;
+    private SendViewModel _send = null!;
+    private LcrBacklogViewModel _lcr = null!;
+    private SetupViewModel _setup = null!;
 
     [ObservableProperty] private object _current;
     [ObservableProperty] private string _databaseLabel;
@@ -18,21 +22,44 @@ public sealed partial class MainWindowViewModel : ObservableObject
 
     public MainWindowViewModel(AppServices services, IFilePicker picker, IClipboardWriter clipboard)
     {
+        _services = services;
+        _picker = picker;
+        _clipboard = clipboard;
         _store = new SettingsStore(services.SettingsPath);
-        var store = _store;
 
-        _import = new ImportViewModel(services, picker);
-        _people = new PeopleViewModel(services);
-        _send = new SendViewModel(services, store);
-        _lcr = new LcrBacklogViewModel(services, clipboard);
-        _setup = new SetupViewModel(services, store);
+        Build();
 
-        var sender = store.Load().Sender;
+        var sender = _store.Load().Sender;
         _senderLabel = sender.IsComplete ? sender.Line.ToUpperInvariant() : "SET UP WHO THIS IS FROM";
 
         _current = _import;
-        _databaseLabel = services.DatabasePath.Replace(
-            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "~");
+        _databaseLabel = Shorten(services.DatabasePath);
+    }
+
+    /// <summary>Every screen holds a view of one database, so opening another means
+    /// building them again rather than asking each to notice.</summary>
+    private void Build()
+    {
+        _import = new ImportViewModel(_services, _picker);
+        _people = new PeopleViewModel(_services);
+        _send = new SendViewModel(_services, _store);
+        _lcr = new LcrBacklogViewModel(_services, _clipboard);
+        _setup = new SetupViewModel(
+            _services, _store,
+            databases: _picker as IDatabasePicker,
+            databaseChanged: OnDatabaseChanged);
+    }
+
+    private void OnDatabaseChanged()
+    {
+        var setup = _setup;
+        Build();
+        DatabaseLabel = Shorten(_services.DatabasePath);
+
+        // Keep the user on Setup, where they just pressed the button, and keep the
+        // instance they are looking at so its message does not vanish.
+        _setup = setup;
+        Current = setup;
     }
 
     public void ShowImport()
@@ -71,6 +98,9 @@ public sealed partial class MainWindowViewModel : ObservableObject
     /// organisation: Courier augments an individual and should not look official.
     /// Re-read on every move between screens, so a name typed into Setup shows up
     /// without anything having to notify anything.</summary>
+    private static string Shorten(string path) =>
+        path.Replace(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "~");
+
     private void RefreshSender()
     {
         var sender = _store.Load().Sender;

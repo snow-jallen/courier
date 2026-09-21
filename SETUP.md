@@ -261,6 +261,25 @@ add the RCS sender once approved, and copy the service's SID (starts `MG`).
 
 ---
 
+## Part 7b · Optional: keeping the directory somewhere else
+
+Courier keeps everything in one file, `contacts.db`, in a Courier folder inside your
+Documents. On the **Setup** screen, under *Where your directory lives*, you can:
+
+- **Open a different file** — an existing Courier directory, perhaps one you moved to
+  another drive.
+- **Start a new one** — an empty directory somewhere of your choosing. The old file is
+  left exactly where it was; nothing is moved or deleted.
+
+A file that is not a Courier directory is refused before it is opened, so picking the
+wrong thing changes nothing.
+
+A synced folder such as Dropbox or iCloud works, with one rule: **only one computer may
+have Courier open at a time.** Two at once can leave the file unreadable, and a sync
+conflict on a database is not something you can merge by hand.
+
+---
+
 ## Part 8 · Filling it into Courier
 
 Open Courier and go to **Setup**.

@@ -51,9 +51,15 @@
 
           <StackPanel Orientation="Horizontal" Spacing="9">
             <Button Content="Back up now" Command="{Binding BackUpNowCommand}"/>
-            <TextBlock Text="{Binding BackupStatus}" VerticalAlignment="Center" FontSize="12.5"
-                       Foreground="{DynamicResource Ink3}"/>
+            <Button Content="Open a different file…" Command="{Binding OpenDatabaseCommand}"
+                    IsVisible="{Binding CanBrowseForDatabase}"/>
+            <Button Content="Start a new one…" Command="{Binding NewDatabaseCommand}"
+                    IsVisible="{Binding CanBrowseForDatabase}"/>
           </StackPanel>
+          <TextBlock Text="{Binding BackupStatus}" FontSize="12.5" TextWrapping="Wrap"
+                     Foreground="{DynamicResource Ink2}"/>
+          <TextBlock FontSize="12" TextWrapping="Wrap" Foreground="{DynamicResource Ink3}"
+                     Text="Keeping it in a synced folder such as Dropbox works, but only if one computer has Courier open at a time — two at once can leave the file unreadable."/>
           <TextBlock FontSize="12" Foreground="{DynamicResource Ink3}" TextWrapping="Wrap"
                      Text="A backup is taken automatically before every import."/>
         </StackPanel>
