@@ -202,25 +202,28 @@ public sealed class UserInterfaceTests : IDisposable
                 $"{scroller} was {small.Width:0} wide in a 1000px window and {large.Width:0} in a 1500px one");
         }, _folder);
 
-    /// <summary>The Send screen carries a recipient list and a compose area, and in a
-    /// short window they cannot both have what they want. The list keeps a usable
-    /// minimum and the page scrolls instead of squeezing it to nothing.</summary>
+    /// <summary>Who it goes to sits beside what to say, so writing a message never
+    /// means scrolling past the list of people first — however many of them there are.</summary>
     [Fact]
-    public Task A_short_window_scrolls_rather_than_crushing_the_recipient_list() =>
+    public Task The_message_form_is_reachable_without_scrolling_past_the_recipients() =>
         InWindow(async (window, model) =>
         {
             await model.ShowSendAsync();
-            Resize(window, 900, 600);
+            Resize(window, 1100, 620);
 
             var list = Scroller(window, "RecipientScroller");
-            Assert.True(list.Bounds.Height >= 200,
-                $"the recipient list was squeezed to {list.Bounds.Height:0}px");
-            Assert.True(list.Bounds.Width <= window.Width,
-                "the recipient list is wider than the window it sits in");
+            var compose = Scroller(window, "ComposeScroller");
 
-            var page = Scroller(window, "PageScroller");
-            Assert.True(page.Extent.Height > page.Viewport.Height,
-                "the page does not scroll, so the compose area below the list is unreachable");
+            Assert.True(list.Bounds.Height >= 170,
+                $"the recipient list was squeezed to {list.Bounds.Height:0}px");
+
+            // Side by side, not stacked: the form starts no lower than the list does.
+            var listTop = list.TranslatePoint(default, window)!.Value.Y;
+            var composeTop = compose.TranslatePoint(default, window)!.Value.Y;
+            Assert.True(composeTop <= listTop + 1,
+                $"the form begins {composeTop - listTop:0}px below the list, so it is still stacked underneath it");
+
+            Assert.True(compose.Bounds.Width > 300, "the form has no room to be written in");
         }, _folder);
 
     [Fact]
@@ -232,7 +235,7 @@ public sealed class UserInterfaceTests : IDisposable
             Resize(window, 1440, 960);
             var roomy = Scroller(window, "RecipientScroller").Bounds.Height;
 
-            Resize(window, 900, 600);
+            Resize(window, 1100, 620);
             var cramped = Scroller(window, "RecipientScroller").Bounds.Height;
 
             Assert.True(roomy > cramped + 150,

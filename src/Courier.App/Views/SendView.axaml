@@ -4,237 +4,243 @@
              x:Class="Courier.App.Views.SendView"
              x:DataType="vm:SendViewModel">
 
-  <ScrollViewer Name="PageScroller" VerticalScrollBarVisibility="Auto"
-                HorizontalScrollBarVisibility="Disabled">
-  <Grid Margin="28,26,28,24" RowDefinitions="*,Auto"
-        MinHeight="{Binding $parent[ScrollViewer].Bounds.Height}">
-    <Grid Grid.Row="0" RowDefinitions="Auto,Auto,Auto,Auto,*,Auto" MinHeight="300">
+  <!-- Who it goes to on the left, taking whatever height the window has; what to say on
+       the right, always in view. Stacked, the form sat below a table that grows, so the
+       more people you could see the further you had to scroll to write anything. -->
+  <Grid Margin="28,26,28,24" RowDefinitions="Auto,*">
+
     <StackPanel Grid.Row="0">
-    <TextBlock Classes="h2" Text="Send a message"/>
-    <TextBlock Classes="lede" Margin="0,4,0,0"
-               Text="Choose who it goes to, write it once, and each person gets it the way they prefer."/>
-    <TextBlock Classes="eyebrow" Text="WHO GETS THIS" Margin="0,20,0,9"/>
+      <TextBlock Classes="h2" Text="Send a message"/>
+      <TextBlock Classes="lede" Margin="0,4,0,0"
+                 Text="Choose who it goes to, write it once, and each person gets it the way they prefer."/>
     </StackPanel>
 
-    <!-- Filters -->
-    <Grid Grid.Row="1" ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto" ColumnSpacing="8" Margin="0,0,0,10">
-      <TextBox Grid.Column="0" MinWidth="180" PlaceholderText="Search a name, email, phone or note"
-               Text="{Binding Search}"/>
-      <ComboBox Grid.Column="1" MinWidth="150" ItemsSource="{Binding WardOptions}"
-                SelectedItem="{Binding Ward}"/>
-      <ComboBox Grid.Column="2" MinWidth="140" ItemsSource="{Binding ChannelOptions}"
-                SelectedItem="{Binding Channel}"/>
-      <ComboBox Grid.Column="3" MinWidth="120" ItemsSource="{Binding MonthOptions}"
-                SelectedItem="{Binding BirthdayMonth}"/>
-      <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
-        <TextBlock Text="Age" VerticalAlignment="Center" FontSize="12.5"
-                   Foreground="{DynamicResource Ink2}"/>
-        <TextBox Width="56" Text="{Binding MinAge}" PlaceholderText="any"/>
-        <TextBlock Text="to" VerticalAlignment="Center" FontSize="12.5"
-                   Foreground="{DynamicResource Ink2}"/>
-        <TextBox Width="56" Text="{Binding MaxAge}" PlaceholderText="any"/>
-      </StackPanel>
-      <Button Grid.Column="5" Content="Clear" Command="{Binding ClearFiltersCommand}"/>
-    </Grid>
+    <Grid Grid.Row="1" ColumnDefinitions="*,430" ColumnSpacing="20" Margin="0,18,0,0">
 
-    <!-- Selection bar + list -->
-    <Border Grid.Row="2" Background="{DynamicResource AccentSoft}" CornerRadius="9,9,0,0" Padding="13,9"
-            BorderBrush="{DynamicResource Line}" BorderThickness="1,1,1,0">
-      <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto">
-        <Button Grid.Column="0" Content="Select all" Padding="10,3" FontSize="12.5"
-                Command="{Binding SelectAllCommand}"/>
-        <Button Grid.Column="1" Content="Clear selection" Padding="10,3" FontSize="12.5"
-                Margin="7,0,0,0" Command="{Binding SelectNoneCommand}"/>
-        <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="7" Margin="0,0,14,0"
-                    VerticalAlignment="Center">
-          <TextBlock Text="Send" VerticalAlignment="Center" FontSize="12.5"
-                     Foreground="{DynamicResource AccentInk}"/>
-          <ComboBox MinWidth="200" ItemsSource="{Binding SendViaOptions}"
-                    SelectedItem="{Binding SendVia}"/>
-        </StackPanel>
-        <TextBlock Grid.Column="4" Text="{Binding SelectedLine}" FontWeight="SemiBold"
-                   VerticalAlignment="Center" Foreground="{DynamicResource AccentInk}"/>
-      </Grid>
-    </Border>
+      <!-- Who gets this -->
+      <Grid Grid.Column="0" RowDefinitions="Auto,Auto,*,Auto">
+        <!-- Filters -->
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto" ColumnSpacing="8" Margin="0,0,0,10">
+          <TextBox Grid.Column="0" MinWidth="180" PlaceholderText="Search a name, email, phone or note"
+                   Text="{Binding Search}"/>
+          <ComboBox Grid.Column="1" MinWidth="150" ItemsSource="{Binding WardOptions}"
+                    SelectedItem="{Binding Ward}"/>
+          <ComboBox Grid.Column="2" MinWidth="140" ItemsSource="{Binding ChannelOptions}"
+                    SelectedItem="{Binding Channel}"/>
+          <ComboBox Grid.Column="3" MinWidth="120" ItemsSource="{Binding MonthOptions}"
+                    SelectedItem="{Binding BirthdayMonth}"/>
+          <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+            <TextBlock Text="Age" VerticalAlignment="Center" FontSize="12.5"
+                       Foreground="{DynamicResource Ink2}"/>
+            <TextBox Width="56" Text="{Binding MinAge}" PlaceholderText="any"/>
+            <TextBlock Text="to" VerticalAlignment="Center" FontSize="12.5"
+                       Foreground="{DynamicResource Ink2}"/>
+            <TextBox Width="56" Text="{Binding MaxAge}" PlaceholderText="any"/>
+          </StackPanel>
+          <Button Grid.Column="5" Content="Clear" Command="{Binding ClearFiltersCommand}"/>
+        </Grid>
 
-    <Border Grid.Row="4" Classes="card" CornerRadius="0,0,9,9" Padding="0" ClipToBounds="True">
-      <Grid RowDefinitions="Auto,*">
-        <Border Grid.Row="0" Classes="header">
-          <Grid ColumnDefinitions="36,2*,1.4*,0.5*,0.8*,0.8*,2*">
-            <TextBlock Grid.Column="0" Classes="colhead" Text=""/>
-            <Button Grid.Column="1" Classes="sortable" Content="NAME"
-                    Command="{Binding SortByCommand}" CommandParameter="name"/>
-            <Button Grid.Column="2" Classes="sortable" Content="WARD"
-                    Command="{Binding SortByCommand}" CommandParameter="ward"/>
-            <Button Grid.Column="3" Classes="sortable" Content="AGE"
-                    Command="{Binding SortByCommand}" CommandParameter="age"/>
-            <Button Grid.Column="4" Classes="sortable" Content="BIRTHDAY"
-                    Command="{Binding SortByCommand}" CommandParameter="birthday"/>
-            <Button Grid.Column="5" Classes="sortable" Content="PREFERS"
-                    Command="{Binding SortByCommand}" CommandParameter="channel"/>
-            <TextBlock Grid.Column="6" Classes="colhead" Text="GOES TO"/>
+        <!-- Selection bar + list -->
+        <Border Grid.Row="1" Background="{DynamicResource AccentSoft}" CornerRadius="9,9,0,0" Padding="13,9"
+                BorderBrush="{DynamicResource Line}" BorderThickness="1,1,1,0">
+          <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto">
+            <Button Grid.Column="0" Content="Select all" Padding="10,3" FontSize="12.5"
+                    Command="{Binding SelectAllCommand}"/>
+            <Button Grid.Column="1" Content="Clear selection" Padding="10,3" FontSize="12.5"
+                    Margin="7,0,0,0" Command="{Binding SelectNoneCommand}"/>
+            <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="7" Margin="0,0,14,0"
+                        VerticalAlignment="Center">
+              <TextBlock Text="Send" VerticalAlignment="Center" FontSize="12.5"
+                         Foreground="{DynamicResource AccentInk}"/>
+              <ComboBox MinWidth="200" ItemsSource="{Binding SendViaOptions}"
+                        SelectedItem="{Binding SendVia}"/>
+            </StackPanel>
+            <TextBlock Grid.Column="4" Text="{Binding SelectedLine}" FontWeight="SemiBold"
+                       VerticalAlignment="Center" Foreground="{DynamicResource AccentInk}"/>
           </Grid>
         </Border>
-        <ScrollViewer Grid.Row="1" Name="RecipientScroller" MinHeight="200"
-                      VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-          <ItemsControl ItemsSource="{Binding Rows}">
-            <ItemsControl.ItemTemplate>
-              <DataTemplate x:DataType="vm:SendRow">
-                <Border Classes="row">
-                  <Grid ColumnDefinitions="36,2*,1.4*,0.5*,0.8*,Auto,2*">
-                    <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected}" VerticalAlignment="Center"/>
-                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
-                      <TextBlock Text="{Binding Name}" FontWeight="SemiBold"
-                                 Foreground="{DynamicResource Ink}" TextTrimming="CharacterEllipsis"/>
-                      <TextBlock Text="{Binding Note}" FontSize="11.5" FontStyle="Italic"
-                                 IsVisible="{Binding HasNote}" TextTrimming="CharacterEllipsis"
-                                 Foreground="{DynamicResource ChVoice}"/>
-                    </StackPanel>
-                    <TextBlock Grid.Column="2" Text="{Binding Ward}" FontSize="12.5"
-                               Foreground="{DynamicResource Ink3}" VerticalAlignment="Center"
-                               TextTrimming="CharacterEllipsis"/>
-                    <TextBlock Grid.Column="3" Text="{Binding Age}" Classes="mono"
-                               Foreground="{DynamicResource Ink2}" VerticalAlignment="Center"/>
-                    <TextBlock Grid.Column="4" Text="{Binding Birthday}" Classes="mono"
-                               Foreground="{DynamicResource Ink3}" VerticalAlignment="Center"/>
-                    <StackPanel Grid.Column="5" Orientation="Horizontal" VerticalAlignment="Center"
-                                Margin="0,0,18,0">
-                      <Button Classes="chip first email" Classes.on="{Binding IsEmail}"
-                              Content="Email" Command="{Binding ChooseEmailCommand}"/>
-                      <Button Classes="chip text" Classes.on="{Binding IsText}"
-                              Content="Text" Command="{Binding ChooseTextCommand}"/>
-                      <Button Classes="chip last voice" Classes.on="{Binding IsVoice}"
-                              Content="Voice" Command="{Binding ChooseVoiceCommand}"/>
-                    </StackPanel>
-                    <StackPanel Grid.Column="6" Orientation="Horizontal" Spacing="5"
-                                VerticalAlignment="Center">
-                      <TextBlock Text="&#x26A0;" FontSize="12" IsVisible="{Binding !CanReceive}"
-                                 Foreground="{DynamicResource Crit}" VerticalAlignment="Center"/>
-                      <TextBlock Text="{Binding GoesTo}" Classes="mono"
-                                 TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
-                    </StackPanel>
-                  </Grid>
-                </Border>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
-        </ScrollViewer>
-      </Grid>
-    </Border>
-    <TextBlock Grid.Row="5" Text="{Binding MatchLine}" Margin="0,8,0,0" FontSize="12"
-               Foreground="{DynamicResource Ink3}"/>
-    </Grid>
 
-    <!-- Compose + summary -->
-    <Grid Grid.Row="1" ColumnDefinitions="*,310" ColumnSpacing="18" Margin="0,20,0,0">
-      <StackPanel Grid.Column="0" Spacing="14">
-        <StackPanel Spacing="6">
-          <TextBlock Classes="eyebrow" Text="SUBJECT — EMAIL ONLY"/>
-          <TextBox Text="{Binding Subject}" PlaceholderText="Stake singles dinner — Friday at 6:30"/>
-        </StackPanel>
-        <StackPanel Spacing="6">
-          <TextBlock Classes="eyebrow" Text="MESSAGE"/>
-          <TextBox Text="{Binding Body}" AcceptsReturn="True" Height="120"
-                   TextWrapping="Wrap"
-                   PlaceholderText="What you want everyone to know."/>
-          <TextBlock Text="{Binding SenderLine}" FontSize="12"
-                     Foreground="{DynamicResource Ink3}" TextWrapping="Wrap"/>
-          <TextBlock Text="{Binding LengthLine}" FontSize="12"
-                     Foreground="{DynamicResource Ink3}"/>
-          <Border Background="{DynamicResource Surface2}" CornerRadius="8" Padding="12,10"
-                  BorderBrush="{DynamicResource Line}" BorderThickness="1">
-            <StackPanel Spacing="5">
-              <TextBlock Classes="eyebrow" Text="WHAT EACH PERSON RECEIVES"/>
-              <TextBlock Text="{Binding MessagePreview}" TextWrapping="Wrap" FontSize="13.5"
-                         Foreground="{DynamicResource Ink}"/>
-              <TextBlock FontSize="11.5" Foreground="{DynamicResource Ink3}" TextWrapping="Wrap"
-                         Text="Sent to each person on their own — one message, one name in it. Nobody sees who else it went to."/>
+        <Border Grid.Row="2" Classes="card" CornerRadius="0,0,9,9" Padding="0" ClipToBounds="True">
+          <Grid RowDefinitions="Auto,*">
+            <Border Grid.Row="0" Classes="header">
+              <Grid ColumnDefinitions="36,2*,1.4*,0.5*,0.8*,0.8*,2*">
+                <TextBlock Grid.Column="0" Classes="colhead" Text=""/>
+                <Button Grid.Column="1" Classes="sortable" Content="NAME"
+                        Command="{Binding SortByCommand}" CommandParameter="name"/>
+                <Button Grid.Column="2" Classes="sortable" Content="WARD"
+                        Command="{Binding SortByCommand}" CommandParameter="ward"/>
+                <Button Grid.Column="3" Classes="sortable" Content="AGE"
+                        Command="{Binding SortByCommand}" CommandParameter="age"/>
+                <Button Grid.Column="4" Classes="sortable" Content="BIRTHDAY"
+                        Command="{Binding SortByCommand}" CommandParameter="birthday"/>
+                <Button Grid.Column="5" Classes="sortable" Content="PREFERS"
+                        Command="{Binding SortByCommand}" CommandParameter="channel"/>
+                <TextBlock Grid.Column="6" Classes="colhead" Text="GOES TO"/>
+              </Grid>
+            </Border>
+            <ScrollViewer Grid.Row="1" Name="RecipientScroller" MinHeight="170"
+                          VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+              <ItemsControl ItemsSource="{Binding Rows}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:SendRow">
+                    <Border Classes="row">
+                      <Grid ColumnDefinitions="36,2*,1.4*,0.5*,0.8*,Auto,2*">
+                        <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected}" VerticalAlignment="Center"/>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
+                          <TextBlock Text="{Binding Name}" FontWeight="SemiBold"
+                                     Foreground="{DynamicResource Ink}" TextTrimming="CharacterEllipsis"/>
+                          <TextBlock Text="{Binding Note}" FontSize="11.5" FontStyle="Italic"
+                                     IsVisible="{Binding HasNote}" TextTrimming="CharacterEllipsis"
+                                     Foreground="{DynamicResource ChVoice}"/>
+                        </StackPanel>
+                        <TextBlock Grid.Column="2" Text="{Binding Ward}" FontSize="12.5"
+                                   Foreground="{DynamicResource Ink3}" VerticalAlignment="Center"
+                                   TextTrimming="CharacterEllipsis"/>
+                        <TextBlock Grid.Column="3" Text="{Binding Age}" Classes="mono"
+                                   Foreground="{DynamicResource Ink2}" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="4" Text="{Binding Birthday}" Classes="mono"
+                                   Foreground="{DynamicResource Ink3}" VerticalAlignment="Center"/>
+                        <StackPanel Grid.Column="5" Orientation="Horizontal" VerticalAlignment="Center"
+                                    Margin="0,0,18,0">
+                          <Button Classes="chip first email" Classes.on="{Binding IsEmail}"
+                                  Content="Email" Command="{Binding ChooseEmailCommand}"/>
+                          <Button Classes="chip text" Classes.on="{Binding IsText}"
+                                  Content="Text" Command="{Binding ChooseTextCommand}"/>
+                          <Button Classes="chip last voice" Classes.on="{Binding IsVoice}"
+                                  Content="Voice" Command="{Binding ChooseVoiceCommand}"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="6" Orientation="Horizontal" Spacing="5"
+                                    VerticalAlignment="Center">
+                          <TextBlock Text="&#x26A0;" FontSize="12" IsVisible="{Binding !CanReceive}"
+                                     Foreground="{DynamicResource Crit}" VerticalAlignment="Center"/>
+                          <TextBlock Text="{Binding GoesTo}" Classes="mono"
+                                     TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                        </StackPanel>
+                      </Grid>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </ScrollViewer>
+          </Grid>
+        </Border>
+        <TextBlock Grid.Row="3" Text="{Binding MatchLine}" Margin="0,8,0,0" FontSize="12"
+                   Foreground="{DynamicResource Ink3}"/>
+      </Grid>
+
+      <!-- What to say -->
+      <ScrollViewer Grid.Column="1" Name="ComposeScroller"
+                    VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Spacing="14">
+        <StackPanel Spacing="14">
+          <StackPanel Spacing="6">
+            <TextBlock Classes="eyebrow" Text="SUBJECT — EMAIL ONLY"/>
+            <TextBox Text="{Binding Subject}" PlaceholderText="Stake singles dinner — Friday at 6:30"/>
+          </StackPanel>
+          <StackPanel Spacing="6">
+            <TextBlock Classes="eyebrow" Text="MESSAGE"/>
+            <TextBox Text="{Binding Body}" AcceptsReturn="True" Height="120"
+                     TextWrapping="Wrap"
+                     PlaceholderText="What you want everyone to know."/>
+            <TextBlock Text="{Binding SenderLine}" FontSize="12"
+                       Foreground="{DynamicResource Ink3}" TextWrapping="Wrap"/>
+            <TextBlock Text="{Binding LengthLine}" FontSize="12"
+                       Foreground="{DynamicResource Ink3}"/>
+            <Border Background="{DynamicResource Surface2}" CornerRadius="8" Padding="12,10"
+                    BorderBrush="{DynamicResource Line}" BorderThickness="1">
+              <StackPanel Spacing="5">
+                <TextBlock Classes="eyebrow" Text="WHAT EACH PERSON RECEIVES"/>
+                <TextBlock Text="{Binding MessagePreview}" TextWrapping="Wrap" FontSize="13.5"
+                           Foreground="{DynamicResource Ink}"/>
+                <TextBlock FontSize="11.5" Foreground="{DynamicResource Ink3}" TextWrapping="Wrap"
+                           Text="Sent to each person on their own — one message, one name in it. Nobody sees who else it went to."/>
+              </StackPanel>
+            </Border>
+          </StackPanel>
+          <!-- What the people who prefer a call will hear. Per message, because the
+               message is the script. -->
+          <Border Background="{DynamicResource ChVoiceSoft}" CornerRadius="9" Padding="14,12"
+                  IsVisible="{Binding VoiceCount}">
+            <StackPanel Spacing="9">
+              <TextBlock Classes="eyebrow" Text="WHAT THE CALLS WILL PLAY"
+                         Foreground="{DynamicResource ChVoice}"/>
+              <RadioButton GroupName="voicemode" IsChecked="{Binding SpeakAloud}" FontSize="13"
+                           Content="Read the message out — nothing to record, ready now"/>
+              <RadioButton GroupName="voicemode" IsChecked="{Binding UseMyVoice}" FontSize="13"
+                           Content="In my own voice — Courier rings you, you read it off the screen"/>
+              <StackPanel Orientation="Horizontal" Spacing="9">
+                <Button Content="Record it now" Command="{Binding RecordVoiceCommand}"
+                        IsEnabled="{Binding !VoiceBusy}" IsVisible="{Binding UseMyVoice}"/>
+                <Button Content="Call me and play it" Command="{Binding PreviewVoiceCommand}"
+                        IsEnabled="{Binding !VoiceBusy}"/>
+                <Border CornerRadius="20" Padding="10,4" VerticalAlignment="Center"
+                        Background="{DynamicResource GoodSoft}" IsVisible="{Binding HasRecording}">
+                  <TextBlock Text="Recorded" FontSize="12" FontWeight="SemiBold"
+                             Foreground="{DynamicResource Good}"/>
+                </Border>
+              </StackPanel>
+              <TextBlock Text="{Binding VoiceStatus}" TextWrapping="Wrap" FontSize="12.5"
+                         Foreground="{DynamicResource Ink2}"/>
             </StackPanel>
           </Border>
-        </StackPanel>
-        <!-- What the people who prefer a call will hear. Per message, because the
-             message is the script. -->
-        <Border Background="{DynamicResource ChVoiceSoft}" CornerRadius="9" Padding="14,12"
-                IsVisible="{Binding VoiceCount}">
-          <StackPanel Spacing="9">
-            <TextBlock Classes="eyebrow" Text="WHAT THE CALLS WILL PLAY"
-                       Foreground="{DynamicResource ChVoice}"/>
-            <RadioButton GroupName="voicemode" IsChecked="{Binding SpeakAloud}" FontSize="13"
-                         Content="Read the message out — nothing to record, ready now"/>
-            <RadioButton GroupName="voicemode" IsChecked="{Binding UseMyVoice}" FontSize="13"
-                         Content="In my own voice — Courier rings you, you read it off the screen"/>
-            <StackPanel Orientation="Horizontal" Spacing="9">
-              <Button Content="Record it now" Command="{Binding RecordVoiceCommand}"
-                      IsEnabled="{Binding !VoiceBusy}" IsVisible="{Binding UseMyVoice}"/>
-              <Button Content="Call me and play it" Command="{Binding PreviewVoiceCommand}"
-                      IsEnabled="{Binding !VoiceBusy}"/>
-              <Border CornerRadius="20" Padding="10,4" VerticalAlignment="Center"
-                      Background="{DynamicResource GoodSoft}" IsVisible="{Binding HasRecording}">
-                <TextBlock Text="Recorded" FontSize="12" FontWeight="SemiBold"
-                           Foreground="{DynamicResource Good}"/>
-              </Border>
-            </StackPanel>
-            <TextBlock Text="{Binding VoiceStatus}" TextWrapping="Wrap" FontSize="12.5"
+
+          <Border Classes="notice privacy" IsVisible="{Binding IsBlocked}">
+            <TextBlock Text="{Binding BlockedReason}" TextWrapping="Wrap" FontSize="12.5"
                        Foreground="{DynamicResource Ink2}"/>
+          </Border>
+          <StackPanel Orientation="Horizontal" Spacing="9">
+            <Button Classes="primary" Content="{Binding SendLabel}"
+                    Command="{Binding SendCommand}" IsEnabled="{Binding !Sending}"
+                    IsVisible="{Binding !IsBlocked}"/>
+          </StackPanel>
+          <TextBlock Text="{Binding Status}" TextWrapping="Wrap" FontSize="12.5"
+                     Foreground="{DynamicResource Ink2}"/>
+        </StackPanel>
+
+        <Border Background="{DynamicResource Surface2}" CornerRadius="9"
+                BorderBrush="{DynamicResource Line}" BorderThickness="1" Padding="14"
+                VerticalAlignment="Top">
+          <StackPanel Spacing="11">
+            <TextBlock Classes="eyebrow" Text="HOW IT GOES OUT"/>
+
+            <Grid ColumnDefinitions="60,*,30">
+              <TextBlock Grid.Column="0" Text="Email" FontSize="12.5" FontWeight="SemiBold"
+                         Foreground="{DynamicResource ChEmail}"/>
+              <TextBlock Grid.Column="2" Text="{Binding EmailCount}" Classes="mono"
+                         HorizontalAlignment="Right" Foreground="{DynamicResource Ink}"/>
+            </Grid>
+            <Grid ColumnDefinitions="60,*,30">
+              <TextBlock Grid.Column="0" Text="Text" FontSize="12.5" FontWeight="SemiBold"
+                         Foreground="{DynamicResource ChText}"/>
+              <TextBlock Grid.Column="2" Text="{Binding TextCount}" Classes="mono"
+                         HorizontalAlignment="Right" Foreground="{DynamicResource Ink}"/>
+            </Grid>
+            <Grid ColumnDefinitions="60,*,30">
+              <TextBlock Grid.Column="0" Text="Voice" FontSize="12.5" FontWeight="SemiBold"
+                         Foreground="{DynamicResource ChVoice}"/>
+              <TextBlock Grid.Column="2" Text="{Binding VoiceCount}" Classes="mono"
+                         HorizontalAlignment="Right" Foreground="{DynamicResource Ink}"/>
+            </Grid>
+
+            <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,1,0,0" Padding="0,11,0,0">
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Grid.Column="0" Text="Estimated cost" FontSize="12"
+                           Foreground="{DynamicResource Ink3}" VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="1" Text="{Binding CostTotal}" Classes="mono" FontSize="17"
+                           Foreground="{DynamicResource Ink}"/>
+              </Grid>
+            </Border>
+            <TextBlock Text="{Binding CostLine}" FontSize="11.5" TextWrapping="Wrap"
+                       Foreground="{DynamicResource Ink3}"/>
+
+            <Border Classes="notice privacy" IsVisible="{Binding AnyUnreachable}">
+              <TextBlock Text="{Binding UnreachableLine}" FontSize="12" TextWrapping="Wrap"
+                         Foreground="{DynamicResource Ink2}"/>
+            </Border>
           </StackPanel>
         </Border>
-
-        <Border Classes="notice privacy" IsVisible="{Binding IsBlocked}">
-          <TextBlock Text="{Binding BlockedReason}" TextWrapping="Wrap" FontSize="12.5"
-                     Foreground="{DynamicResource Ink2}"/>
-        </Border>
-        <StackPanel Orientation="Horizontal" Spacing="9">
-          <Button Classes="primary" Content="{Binding SendLabel}"
-                  Command="{Binding SendCommand}" IsEnabled="{Binding !Sending}"
-                  IsVisible="{Binding !IsBlocked}"/>
         </StackPanel>
-        <TextBlock Text="{Binding Status}" TextWrapping="Wrap" FontSize="12.5"
-                   Foreground="{DynamicResource Ink2}"/>
-      </StackPanel>
-
-      <Border Grid.Column="1" Background="{DynamicResource Surface2}" CornerRadius="9"
-              BorderBrush="{DynamicResource Line}" BorderThickness="1" Padding="14"
-              VerticalAlignment="Top">
-        <StackPanel Spacing="11">
-          <TextBlock Classes="eyebrow" Text="HOW IT GOES OUT"/>
-
-          <Grid ColumnDefinitions="60,*,30">
-            <TextBlock Grid.Column="0" Text="Email" FontSize="12.5" FontWeight="SemiBold"
-                       Foreground="{DynamicResource ChEmail}"/>
-            <TextBlock Grid.Column="2" Text="{Binding EmailCount}" Classes="mono"
-                       HorizontalAlignment="Right" Foreground="{DynamicResource Ink}"/>
-          </Grid>
-          <Grid ColumnDefinitions="60,*,30">
-            <TextBlock Grid.Column="0" Text="Text" FontSize="12.5" FontWeight="SemiBold"
-                       Foreground="{DynamicResource ChText}"/>
-            <TextBlock Grid.Column="2" Text="{Binding TextCount}" Classes="mono"
-                       HorizontalAlignment="Right" Foreground="{DynamicResource Ink}"/>
-          </Grid>
-          <Grid ColumnDefinitions="60,*,30">
-            <TextBlock Grid.Column="0" Text="Voice" FontSize="12.5" FontWeight="SemiBold"
-                       Foreground="{DynamicResource ChVoice}"/>
-            <TextBlock Grid.Column="2" Text="{Binding VoiceCount}" Classes="mono"
-                       HorizontalAlignment="Right" Foreground="{DynamicResource Ink}"/>
-          </Grid>
-
-          <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,1,0,0" Padding="0,11,0,0">
-            <Grid ColumnDefinitions="*,Auto">
-              <TextBlock Grid.Column="0" Text="Estimated cost" FontSize="12"
-                         Foreground="{DynamicResource Ink3}" VerticalAlignment="Center"/>
-              <TextBlock Grid.Column="1" Text="{Binding CostTotal}" Classes="mono" FontSize="17"
-                         Foreground="{DynamicResource Ink}"/>
-            </Grid>
-          </Border>
-          <TextBlock Text="{Binding CostLine}" FontSize="11.5" TextWrapping="Wrap"
-                     Foreground="{DynamicResource Ink3}"/>
-
-          <Border Classes="notice privacy" IsVisible="{Binding AnyUnreachable}">
-            <TextBlock Text="{Binding UnreachableLine}" FontSize="12" TextWrapping="Wrap"
-                       Foreground="{DynamicResource Ink2}"/>
-          </Border>
-        </StackPanel>
-      </Border>
+      </ScrollViewer>
     </Grid>
   </Grid>
-  </ScrollViewer>
 </UserControl>
