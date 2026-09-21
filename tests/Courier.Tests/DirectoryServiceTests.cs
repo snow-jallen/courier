@@ -24,7 +24,7 @@ public sealed class DirectoryServiceTests : IDisposable
     private static async Task SeedAsync(CourierDbContext db, params NormalizedPerson[] people)
     {
         var existing = await DirectoryService.ExistingPeople(db).ToListAsync();
-        var plan = ImportPlanner.Plan(people, existing);
+        var plan = ImportPlanner.Plan(people, existing, SingleAdults);
         await new ImportService(db).ApplyAsync(
             new LcrReport([], 1, "seed.pdf", new string('a', 64), SingleAdults), plan, Today);
     }

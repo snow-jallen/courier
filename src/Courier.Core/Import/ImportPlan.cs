@@ -35,8 +35,13 @@ public sealed record ImportPlan(
     IReadOnlyList<ExistingPerson> Deactivated,
     IReadOnlyList<PersonReturn> Reactivated,
     int Unchanged,
-    IReadOnlyList<string> Warnings)
+    IReadOnlyList<string> Warnings,
+    IReadOnlyList<string> Notes)
 {
     public int TotalInFile => Added.Count + Updated.Count + Reactivated.Count + Unchanged;
     public bool HasWarnings => Warnings.Count > 0;
+
+    /// <summary>Notes are not warnings. Nothing is wrong; the user is being told
+    /// something about the report they chose.</summary>
+    public bool HasNotes => Notes.Count > 0;
 }

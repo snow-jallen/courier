@@ -16,7 +16,7 @@ public sealed class ImportService(CourierDbContext db)
 
         var existing = await DirectoryService.ExistingPeople(db).ToListAsync(cancellation);
 
-        return (report, ImportPlanner.Plan(incoming, existing));
+        return (report, ImportPlanner.Plan(incoming, existing, report.Source));
     }
 
     /// <summary>Writes the plan. Everything lands or nothing does.</summary>

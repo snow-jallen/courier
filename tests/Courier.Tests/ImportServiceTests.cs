@@ -34,7 +34,7 @@ public sealed class ImportServiceTests : IDisposable
     {
         var service = new ImportService(db);
         var existing = await DirectoryService.ExistingPeople(db).ToListAsync();
-        var plan = ImportPlanner.Plan(people, existing);
+        var plan = ImportPlanner.Plan(people, existing, SingleAdults);
         return await service.ApplyAsync(Report(people.Count), plan, on);
     }
 
