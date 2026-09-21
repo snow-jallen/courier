@@ -51,9 +51,10 @@ build number supplies it, so versions always go up.
 
 Put `[skip release]` in the commit message to push without building one.
 
-The workflow runs the tests, then builds and packages on four real runners — Windows,
-Linux, Apple silicon and Intel Macs — because an installer has to be made on the system
-it installs onto. It publishes the installers to a GitHub release, alongside the small
+The workflow runs the tests, then builds and packages on three real runners — Windows,
+Linux and Apple silicon — because an installer has to be made on the system it installs
+onto. There is no Intel Mac build; GitHub's Intel runners now queue for a long time and
+often never start, and the workflow says where to add it back. It publishes the installers to a GitHub release, alongside the small
 manifest Courier reads to notice that a newer version exists.
 
 Courier then updates itself: **Setup → Updates → Check for updates** downloads it and

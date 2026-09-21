@@ -8,7 +8,7 @@ name: Release
 # history, for instance — should not stop a release.
 #
 # Each platform has to be packaged on itself — Velopack builds a Windows installer only
-# on Windows, and needs macOS's own tools for a .app bundle — so the matrix is four real
+# on Windows, and needs macOS's own tools for a .app bundle — so the matrix is three real
 # runners rather than one cross-compiling.
 on:
   push:
@@ -67,8 +67,9 @@ jobs:
             runtime: linux-x64
           - os: macos-latest
             runtime: osx-arm64
-          - os: macos-13
-            runtime: osx-x64
+          # No Intel Mac build: those runners now queue for a long time and often never
+          # start, holding up every release for a machine nobody here is using. Add
+          # `{ os: macos-13, runtime: osx-x64 }` back if somebody turns out to need it.
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
