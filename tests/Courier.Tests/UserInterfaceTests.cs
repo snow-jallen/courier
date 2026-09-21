@@ -49,7 +49,9 @@ public sealed class UserInterfaceTests : IDisposable
         Func<Task<int>> action = async () =>
         {
             Directory.CreateDirectory(folder);
-            var services = AppServices.Start(Path.Combine(folder, "contacts.db"));
+            var services = AppServices.Start(
+                Path.Combine(folder, "contacts.db"),
+                Path.Combine(folder, "settings.json"));
             var window = new MainWindow(services);
             window.Show();
 
