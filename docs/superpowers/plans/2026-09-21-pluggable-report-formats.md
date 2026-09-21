@@ -746,6 +746,7 @@ MSG
 - Delete: `src/Courier.Core/Import/LcrColumns.cs`
 - Modify: `tests/Courier.Tests/LcrReportParserTests.cs:50-56` (the "not a report" message)
 - Modify: `tests/Courier.Tests/RealReportTests.cs` (`ColumnDetectionTests`)
+- Modify: `tests/Courier.Tests/ImportServiceTests.cs:28`, `tests/Courier.Tests/DirectoryServiceTests.cs:28` (the two `LcrReport` constructions)
 
 **Interfaces:**
 - Consumes: `ReportFormats.Known`, `IReportFormat`, `ColumnLayout`, `LcrField`, `ReportSource`.
@@ -989,6 +990,31 @@ Note the `Furniture` array and `IsBodyLine` are gone from this file — they mov
 ```bash
 git rm src/Courier.Core/Import/LcrColumns.cs
 ```
+
+- [ ] **Step 5a: Keep the two tests that construct an `LcrReport` compiling**
+
+`LcrReport` has gained a fifth field, and two test files build one directly. Neither is about report formats, so both get the report that prints everything.
+
+In `tests/Courier.Tests/ImportServiceTests.cs`, add beside the other statics (line 13):
+
+```csharp
+    private static readonly ReportSource SingleAdults = new("Single Adults", ReportFields.All);
+```
+
+and change `Report` (line 28):
+
+```csharp
+    private static LcrReport Report(int rows) =>
+        new([], 29, "manti-singles.pdf", new string('a', 64), SingleAdults);
+```
+
+In `tests/Courier.Tests/DirectoryServiceTests.cs`, add the same static beside `Today` (line 12), and change the construction in `SeedAsync` (line 28):
+
+```csharp
+            new LcrReport([], 1, "seed.pdf", new string('a', 64), SingleAdults), plan, Today);
+```
+
+These are the only two places outside the parser that construct an `LcrReport` — verified with `grep -rn "new LcrReport(" --include=*.cs src tests`.
 
 - [ ] **Step 6: Update `ColumnDetectionTests` in `tests/Courier.Tests/RealReportTests.cs`**
 
@@ -1605,31 +1631,16 @@ Every existing `ImportPlanner.Plan(a, b)` becomes `ImportPlanner.Plan(a, b, Sing
 
 The eleven call sites in `tests/Courier.Tests/ImportPlannerTests.cs` need only the extra argument; `SingleAdults` is already declared there by Step 2.
 
-`tests/Courier.Tests/ImportServiceTests.cs` also constructs an `LcrReport`, which has gained a field. Add beside the other statics (line 13):
-
-```csharp
-    private static readonly ReportSource SingleAdults = new("Single Adults", ReportFields.All);
-```
-
-change `Report` (line 28):
-
-```csharp
-    private static LcrReport Report(int rows) =>
-        new([], 29, "manti-singles.pdf", new string('a', 64), SingleAdults);
-```
-
-and `ImportAsync` (line 35):
+`tests/Courier.Tests/ImportServiceTests.cs` and `tests/Courier.Tests/DirectoryServiceTests.cs` already have a `SingleAdults` static — Task 3 Step 5a added it when `LcrReport` gained its fifth field. Reuse it; do not declare a second one. Change `ImportAsync` in `ImportServiceTests.cs`:
 
 ```csharp
         var plan = ImportPlanner.Plan(people, existing, SingleAdults);
 ```
 
-`tests/Courier.Tests/DirectoryServiceTests.cs` constructs one inline. Add the same static beside `Today` (line 12), then change `SeedAsync` (lines 26-28):
+and `SeedAsync` in `DirectoryServiceTests.cs`:
 
 ```csharp
         var plan = ImportPlanner.Plan(people, existing, SingleAdults);
-        await new ImportService(db).ApplyAsync(
-            new LcrReport([], 1, "seed.pdf", new string('a', 64), SingleAdults), plan, Today);
 ```
 
 - [ ] **Step 8: Run the whole suite**
