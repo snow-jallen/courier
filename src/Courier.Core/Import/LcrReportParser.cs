@@ -4,20 +4,18 @@ using UglyToad.PdfPig;
 namespace Courier.Core.Import;
 
 public sealed record LcrReport(
-    IReadOnlyList<LcrRow> Rows, int PageCount, string FileName, string Sha256);
+    IReadOnlyList<LcrRow> Rows, int PageCount, string FileName, string Sha256, ReportSource Source);
 
 public sealed class LcrReportException(string message) : Exception(message);
 
-/// <summary>Reads the Single Adults report exported from LCR.</summary>
+/// <summary>Reads a report exported from LCR.
+///
+/// Which report it is, is worked out by inspecting the file: each registered format is
+/// offered the pages in turn, and the first to recognise one drives every page. See
+/// ReportFormats for the two Courier knows, and docs/architecture.md for why reading
+/// these PDFs takes geometry at all.</summary>
 public static class LcrReportParser
 {
-    /// <summary>Lines belonging to the report's own furniture rather than to a person.</summary>
-    private static readonly string[] Furniture =
-    [
-        "lcr.churchofjesuschrist.org", "Single Adults", "Description", "Group by Unit",
-        "Count:", "Preferred", "Individual", "Street 1", "(1 Jan)",
-    ];
-
     public static LcrReport Parse(string path)
     {
         using var stream = File.OpenRead(path);
@@ -31,62 +29,94 @@ public static class LcrReportParser
         var bytes = buffer.ToArray();
         var sha = Convert.ToHexStringLower(SHA256.HashData(bytes));
 
+        using var document = PdfDocument.Open(bytes);
+        var pageCount = document.NumberOfPages;
+
+        // Every page is read at most once, however many formats are offered it.
+        var cache = new Dictionary<int, IReadOnlyList<TextLine>>();
+        IReadOnlyList<TextLine> LinesOf(int number) =>
+            cache.TryGetValue(number, out var cached)
+                ? cached
+                : cache[number] = PdfTableReader.ReadLines(document.GetPage(number));
+
+        var format = Choose(pageCount, LinesOf)
+            ?? throw new LcrReportException(Unrecognised(fileName));
+
         var rows = new List<LcrRow>();
-        LcrColumns? columns = null;
-        int pageCount;
+        ColumnLayout? layout = null;
 
-        using (var document = PdfDocument.Open(bytes))
+        for (var number = 1; number <= pageCount; number++)
         {
-            pageCount = document.NumberOfPages;
-            foreach (var page in document.GetPages())
-            {
-                var lines = PdfTableReader.ReadLines(page);
-                columns = LcrColumns.Detect(lines) ?? columns;
-                if (columns is null) continue;
+            var lines = LinesOf(number);
 
-                var body = lines.Where(IsBodyLine).ToList();
-                var step = PdfTableReader.RowBreakThreshold(body);
-                foreach (var group in PdfTableReader.GroupIntoRows(body, step))
-                {
-                    var row = BuildRow(group, columns, page.Number);
-                    if (row is not null) rows.Add(row);
-                }
+            // Below the heading, and only below it. The Organizations and Callings
+            // report prints the stake's Single Adult callings above the members table
+            // on page 1; read as people, those rows are stitched into the row below
+            // and corrupt it.
+            var floor = double.PositiveInfinity;
+            foreach (var group in PdfTableReader.GroupIntoRows(lines, Threshold(lines, format)))
+            {
+                var found = format.Detect(group);
+                if (found is null) continue;
+                layout = found;
+                floor = group.Min(l => l.Baseline);
+                break;
+            }
+
+            // A page before the first heading has nothing to read. A page after it
+            // with no heading of its own is a continuation, and keeps every line.
+            if (layout is null) continue;
+
+            var body = lines
+                .Where(l => l.Baseline < floor)
+                .Where(l => !format.IsFurniture(l.Text))
+                .ToList();
+
+            foreach (var group in PdfTableReader.GroupIntoRows(body, Threshold(body, format)))
+            {
+                var row = BuildRow(group, layout, number);
+                if (row is not null) rows.Add(row);
             }
         }
 
-        if (columns is null)
-            throw new LcrReportException(
-                $"'{fileName}' does not look like the Single Adults report from LCR — " +
-                "its column headings (Preferred Name, Individual E-mail, Unit, Age, Birthday) were not found.");
-
-        return new LcrReport(Stitch(rows), pageCount, fileName, sha);
+        return new LcrReport(
+            Stitch(rows), pageCount, fileName, sha, new ReportSource(format.Name, format.Carries));
     }
 
-    private static bool IsBodyLine(TextLine line)
+    private static double Threshold(IReadOnlyList<TextLine> lines, IReportFormat format) =>
+        PdfTableReader.RowBreakThreshold(lines, format.RowBreakFactor);
+
+    /// <summary>The first registered format to recognise a heading anywhere in the
+    /// document. Null when none does.</summary>
+    private static IReportFormat? Choose(int pageCount, Func<int, IReadOnlyList<TextLine>> linesOf)
     {
-        var text = line.Text;
-        if (text.Length == 0) return false;
-        if (text.StartsWith("Page ", StringComparison.Ordinal) && text.Contains(" of ", StringComparison.Ordinal))
-            return false;
-        return !Furniture.Any(f => text.Contains(f, StringComparison.Ordinal));
+        for (var number = 1; number <= pageCount; number++)
+        {
+            var lines = linesOf(number);
+            foreach (var format in ReportFormats.Known)
+                foreach (var group in PdfTableReader.GroupIntoRows(lines, Threshold(lines, format)))
+                    if (format.Detect(group) is not null) return format;
+        }
+        return null;
     }
 
-    private static LcrRow? BuildRow(IReadOnlyList<TextLine> group, LcrColumns columns, int page)
+    private static string Unrecognised(string fileName) =>
+        $"'{fileName}' does not look like a report Courier can read. It knows the " +
+        $"{string.Join(" report and the ", ReportFormats.Known.Select(f => f.Name))} report. " +
+        "Export one of those from LCR as a PDF and open it here.";
+
+    private static LcrRow? BuildRow(IReadOnlyList<TextLine> group, ColumnLayout layout, int page)
     {
-        var edges = columns.Edges;
-        var cells = new List<string>[7];
-        for (var c = 0; c < 7; c++) cells[c] = [];
+        var row = new LcrRow(
+            layout.Cell(group, LcrField.Name),
+            layout.Cell(group, LcrField.Email),
+            layout.Cell(group, LcrField.Phone),
+            layout.Cell(group, LcrField.Unit),
+            layout.Cell(group, LcrField.Age),
+            layout.Cell(group, LcrField.Birthday),
+            layout.Cell(group, LcrField.Address),
+            page);
 
-        foreach (var line in group)
-            for (var c = 0; c < 7; c++)
-            {
-                var text = line.Cell(edges[c], edges[c + 1]);
-                if (text.Length > 0) cells[c].Add(text);
-            }
-
-        string Join(int c) => string.Join(' ', cells[c]);
-
-        var row = new LcrRow(Join(0), Join(1), Join(2), Join(3), Join(4), Join(5), Join(6), page);
         var empty = row is { Name.Length: 0, Email.Length: 0, Phone.Length: 0, Unit.Length: 0,
                              Age.Length: 0, Birthday.Length: 0, Address.Length: 0 };
         return empty ? null : row;

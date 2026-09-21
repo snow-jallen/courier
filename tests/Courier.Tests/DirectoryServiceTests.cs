@@ -10,6 +10,7 @@ public sealed class DirectoryServiceTests : IDisposable
 {
     private readonly string _path = Path.Combine(Path.GetTempPath(), $"courier-dir-{Guid.NewGuid():N}.db");
     private static readonly DateOnly Today = new(2026, 9, 16);
+    private static readonly ReportSource SingleAdults = new("Single Adults", ReportFields.All);
 
     private CourierDbContext Open()
     {
@@ -25,7 +26,7 @@ public sealed class DirectoryServiceTests : IDisposable
         var existing = await DirectoryService.ExistingPeople(db).ToListAsync();
         var plan = ImportPlanner.Plan(people, existing);
         await new ImportService(db).ApplyAsync(
-            new LcrReport([], 1, "seed.pdf", new string('a', 64)), plan, Today);
+            new LcrReport([], 1, "seed.pdf", new string('a', 64), SingleAdults), plan, Today);
     }
 
     private static NormalizedPerson Person(

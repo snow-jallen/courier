@@ -48,12 +48,25 @@ public sealed class LcrReportParserTests
     }
 
     [Fact]
-    public void Refuses_a_pdf_that_is_not_the_report()
+    public void Refuses_a_pdf_that_is_not_a_report_it_knows()
     {
         var notTheReport = new PdfNotAReport();
         var error = Assert.Throws<LcrReportException>(
             () => LcrReportParser.Parse(new MemoryStream(notTheReport.Bytes), "holiday-photos.pdf"));
-        Assert.Contains("does not look like the Single Adults report", error.Message, StringComparison.Ordinal);
+
+        Assert.Contains("holiday-photos.pdf", error.Message, StringComparison.Ordinal);
+        Assert.Contains("Single Adults", error.Message, StringComparison.Ordinal);
+        Assert.Contains("Organizations and Callings", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Says_which_report_it_read()
+    {
+        using var stream = new MemoryStream(SyntheticReport.Build());
+        var report = LcrReportParser.Parse(stream, "synthetic.pdf");
+
+        Assert.Equal("Single Adults", report.Source.FormatName);
+        Assert.Equal(ReportFields.All, report.Source.Carries);
     }
 
     private sealed class PdfNotAReport

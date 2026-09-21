@@ -78,10 +78,16 @@ public sealed class ColumnDetectionTests(ITestOutputHelper output)
     {
         using var document = UglyToad.PdfPig.PdfDocument.Open(TestPaths.RealReport!);
         var lines = PdfTableReader.ReadLines(document.GetPage(1));
-        var columns = LcrColumns.Detect(lines);
-        output.WriteLine($"columns: {columns}");
-        output.WriteLine($"row break at: {PdfTableReader.RowBreakThreshold(lines):0.00}pt");
-        Assert.NotNull(columns);
+        var format = ReportFormats.SingleAdults;
+        var threshold = PdfTableReader.RowBreakThreshold(lines, format.RowBreakFactor);
+
+        var layout = PdfTableReader.GroupIntoRows(lines, threshold)
+            .Select(format.Detect)
+            .FirstOrDefault(l => l is not null);
+
+        output.WriteLine($"row break at: {threshold:0.00}pt");
+        Assert.NotNull(layout);
+        Assert.True(layout.Has(LcrField.Address));
     }
 }
 

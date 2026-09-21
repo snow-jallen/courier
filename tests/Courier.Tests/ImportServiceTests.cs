@@ -11,6 +11,7 @@ public sealed class ImportServiceTests : IDisposable
     private readonly string _path = Path.Combine(Path.GetTempPath(), $"courier-{Guid.NewGuid():N}.db");
     private static readonly DateOnly Today = new(2026, 9, 16);
     private static readonly DateOnly Later = new(2026, 10, 14);
+    private static readonly ReportSource SingleAdults = new("Single Adults", ReportFields.All);
 
     private CourierDbContext Open()
     {
@@ -25,7 +26,8 @@ public sealed class ImportServiceTests : IDisposable
         new(last, first, $"{last}, {first}", ward, 40, 3, 4, "1 Main",
             email, phone, phone is null ? null : "+1435555" + phone[^4..], false, ward);
 
-    private static LcrReport Report(int rows) => new([], 29, "manti-singles.pdf", new string('a', 64));
+    private static LcrReport Report(int rows) =>
+        new([], 29, "manti-singles.pdf", new string('a', 64), SingleAdults);
 
     private static async Task<ImportRun> ImportAsync(
         CourierDbContext db, IReadOnlyList<NormalizedPerson> people, DateOnly on)
