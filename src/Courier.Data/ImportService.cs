@@ -49,16 +49,16 @@ public sealed class ImportService(CourierDbContext db)
                 FirstSeenOn = today,
                 LastSeenOn = today,
             };
-            ApplyFields(person, incoming, today);
+            ApplyFields(person, incoming, report.Source, today);
             db.People.Add(person);
             run.Changes.Add(new PersonChange { PersonId = person.Id, Kind = ChangeKind.Added });
-            await SyncLcrContactAsync(person, incoming, today, cancellation);
+            await SyncLcrContactAsync(person, incoming, report.Source, today, cancellation);
         }
 
         foreach (var update in plan.Updated)
         {
             var person = await LoadAsync(update.Existing.Id, cancellation);
-            ApplyFields(person, update.Incoming, today);
+            ApplyFields(person, update.Incoming, report.Source, today);
             person.LastSeenOn = today;
             foreach (var change in update.Changes)
                 run.Changes.Add(new PersonChange
@@ -69,7 +69,7 @@ public sealed class ImportService(CourierDbContext db)
                     OldValue = change.From,
                     NewValue = change.To,
                 });
-            await SyncLcrContactAsync(person, update.Incoming, today, cancellation);
+            await SyncLcrContactAsync(person, update.Incoming, report.Source, today, cancellation);
         }
 
         foreach (var returning in plan.Reactivated)
@@ -78,9 +78,9 @@ public sealed class ImportService(CourierDbContext db)
             person.IsActive = true;
             person.DeactivatedOn = null;
             person.LastSeenOn = today;
-            ApplyFields(person, returning.Incoming, today);
+            ApplyFields(person, returning.Incoming, report.Source, today);
             run.Changes.Add(new PersonChange { PersonId = person.Id, Kind = ChangeKind.Reactivated });
-            await SyncLcrContactAsync(person, returning.Incoming, today, cancellation);
+            await SyncLcrContactAsync(person, returning.Incoming, report.Source, today, cancellation);
         }
 
         foreach (var gone in plan.Deactivated)
@@ -100,18 +100,23 @@ public sealed class ImportService(CourierDbContext db)
     private Task<Person> LoadAsync(Guid id, CancellationToken cancellation) =>
         db.People.Include(p => p.ContactPoints).FirstAsync(p => p.Id == id, cancellation);
 
-    /// <summary>Copies the fields an import owns. Preferred channel and notes are
-    /// untouched by design.</summary>
-    private static void ApplyFields(Person person, NormalizedPerson incoming, DateOnly today)
+    /// <summary>Copies the fields this report prints. Preferred channel and notes are
+    /// untouched by design, and so is any field the report has no column for: it has
+    /// said nothing about them, and silence is not an instruction to blank them.</summary>
+    private static void ApplyFields(Person person, NormalizedPerson incoming, ReportSource source, DateOnly today)
     {
         person.DisplayName = incoming.DisplayName;
-        person.Ward = incoming.Ward;
-        person.Age = incoming.Age;
-        person.BirthMonth = incoming.BirthMonth;
-        person.BirthDay = incoming.BirthDay;
-        person.Address = incoming.Address;
-        person.LcrEmail = incoming.Email;
-        person.LcrPhone = incoming.PhoneRaw;
+        if (source.Carry(ReportFields.Unit)) person.Ward = incoming.Ward;
+        if (source.Carry(ReportFields.Age)) person.Age = incoming.Age;
+        if (source.Carry(ReportFields.Birthday))
+        {
+            person.BirthMonth = incoming.BirthMonth;
+            person.BirthDay = incoming.BirthDay;
+        }
+        if (source.Carry(ReportFields.Address)) person.Address = incoming.Address;
+        if (source.Carry(ReportFields.Email)) person.LcrEmail = incoming.Email;
+        if (source.Carry(ReportFields.Phone)) person.LcrPhone = incoming.PhoneRaw;
+
         person.LastSeenOn = today;
         person.UpdatedAt = DateTimeOffset.UtcNow;
 
@@ -126,10 +131,14 @@ public sealed class ImportService(CourierDbContext db)
     /// "to enter in LCR" report once the entry has been made.
     /// </summary>
     private async Task SyncLcrContactAsync(
-        Person person, NormalizedPerson incoming, DateOnly today, CancellationToken cancellation)
+        Person person, NormalizedPerson incoming, ReportSource source, DateOnly today, CancellationToken cancellation)
     {
-        await UpsertAsync(person, ContactKind.Email, incoming.Email, Normalize(incoming.Email), false, today, cancellation);
-        await UpsertAsync(person, ContactKind.Phone, incoming.PhoneRaw, incoming.PhoneE164, incoming.AreaCodeAssumed, today, cancellation);
+        if (source.Carry(ReportFields.Email))
+            await UpsertAsync(person, ContactKind.Email, incoming.Email, Normalize(incoming.Email),
+                false, today, cancellation);
+        if (source.Carry(ReportFields.Phone))
+            await UpsertAsync(person, ContactKind.Phone, incoming.PhoneRaw, incoming.PhoneE164,
+                incoming.AreaCodeAssumed, today, cancellation);
     }
 
     private async Task UpsertAsync(

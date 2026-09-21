@@ -12,6 +12,13 @@ public sealed class ImportServiceTests : IDisposable
     private static readonly DateOnly Today = new(2026, 9, 16);
     private static readonly DateOnly Later = new(2026, 10, 14);
     private static readonly ReportSource SingleAdults = new("Single Adults", ReportFields.All);
+    private static readonly ReportSource Callings = new("Organizations and Callings",
+        ReportFields.Unit | ReportFields.Birthday | ReportFields.Email | ReportFields.Phone);
+
+    /// <summary>A report from a given source, for the cases that turn on what the
+    /// report printed rather than on what is in it.</summary>
+    private static LcrReport From(ReportSource source) =>
+        new([], 9, "print.pdf", new string('b', 64), source);
 
     private CourierDbContext Open()
     {
@@ -22,8 +29,8 @@ public sealed class ImportServiceTests : IDisposable
 
     private static NormalizedPerson Person(
         string last, string first, string? email = null, string? phone = null,
-        string ward = "Manti 2nd Ward") =>
-        new(last, first, $"{last}, {first}", ward, 40, 3, 4, "1 Main",
+        string ward = "Manti 2nd Ward", string? address = "1 Main") =>
+        new(last, first, $"{last}, {first}", ward, 40, 3, 4, address,
             email, phone, phone is null ? null : "+1435555" + phone[^4..], false, ward);
 
     private static LcrReport Report(int rows) =>
@@ -173,6 +180,54 @@ public sealed class ImportServiceTests : IDisposable
         Assert.True(alvin.IsActive);
         Assert.Null(alvin.DeactivatedOn);
         Assert.Equal(Today, alvin.FirstSeenOn);
+    }
+
+    [Fact]
+    public async Task A_report_that_prints_no_addresses_leaves_the_stored_one_alone()
+    {
+        using var db = Open();
+
+        // A Single Adults import, which does print an address.
+        await ImportAsync(db, [Person("Ashby", "Miriam", address: "812 North 700 East")], Today);
+        Assert.Equal("812 North 700 East", (await db.People.SingleAsync()).Address);
+
+        // Then an Organizations and Callings import, which has no Address column at
+        // all. Reaching for the other report must not cost the directory its
+        // addresses.
+        var existing = await DirectoryService.ExistingPeople(db).ToListAsync();
+        var plan = ImportPlanner.Plan(
+            [Person("Ashby", "Miriam", ward: "Sterling Ward", address: null)], existing, Callings);
+        await new ImportService(db).ApplyAsync(From(Callings), plan, Later);
+
+        var person = await db.People.SingleAsync();
+        Assert.Equal("812 North 700 East", person.Address);
+        Assert.Equal("Sterling Ward", person.Ward);   // the field it did print still lands
+        Assert.Equal(Later, person.LastSeenOn);
+    }
+
+    [Fact]
+    public async Task A_report_that_prints_no_phone_numbers_leaves_the_stored_one_alone()
+    {
+        using var db = Open();
+        await ImportAsync(db, [Person("Quilley", "Barnaby", phone: "555-0127")], Today);
+
+        // A report that prints a name and a ward and nothing else. The ward changes,
+        // so this person is updated and the write runs — which is what makes this a
+        // test of the guard rather than of doing nothing.
+        var namesOnly = new ReportSource("Names only", ReportFields.Unit);
+        var existing = await DirectoryService.ExistingPeople(db).ToListAsync();
+        var plan = ImportPlanner.Plan(
+            [Person("Quilley", "Barnaby", ward: "Sterling Ward")], existing, namesOnly);
+        await new ImportService(db).ApplyAsync(From(namesOnly), plan, Later);
+
+        var person = await db.People.Include(p => p.ContactPoints).SingleAsync();
+        Assert.Equal("Sterling Ward", person.Ward);
+        Assert.Equal("555-0127", person.LcrPhone);
+
+        // The contact point was not touched, so it was not re-stamped as seen.
+        var contact = Assert.Single(person.ContactPoints);
+        Assert.Equal("555-0127", contact.Value);
+        Assert.Equal(Today, contact.LastSeenInLcrOn);
     }
 
     private static Task<List<ContactPoint>> OutstandingAsync(CourierDbContext db) =>
