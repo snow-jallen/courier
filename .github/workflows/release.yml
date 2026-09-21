@@ -1,0 +1,138 @@
+name: Release
+
+# Tag a commit and this builds, packages and publishes it:
+#
+#     git tag v1.0.1 && git push origin v1.0.1
+#
+# Each platform has to be packaged on itself — Velopack builds a Windows installer
+# only on Windows, and needs macOS's own tools for a .app bundle — so the matrix is
+# three real runners rather than one cross-compiling.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to build, without the leading v'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      # Nothing ships that the suite has not passed, including on a machine that has
+      # never seen a real directory — those tests skip rather than fail.
+      - run: dotnet test --configuration Release
+
+  package:
+    needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            runtime: win-x64
+          - os: ubuntu-latest
+            runtime: linux-x64
+          - os: macos-latest
+            runtime: osx-arm64
+          - os: macos-13
+            runtime: osx-x64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Work out the version
+        id: version
+        shell: bash
+        run: |
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            echo "value=${{ github.event.inputs.version }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install the packaging tool
+        run: dotnet tool install -g vpk
+
+      - name: Publish
+        run: >
+          dotnet publish src/Courier.App
+          -c Release
+          -r ${{ matrix.runtime }}
+          -o publish
+          -p:Version=${{ steps.version.outputs.value }}
+
+      - name: Package for Windows
+        if: startsWith(matrix.runtime, 'win')
+        run: >
+          vpk pack
+          --packId Courier
+          --packVersion ${{ steps.version.outputs.value }}
+          --packDir publish
+          --mainExe Courier.App.exe
+          --packTitle Courier
+          --icon assets/courier.ico
+          --runtime ${{ matrix.runtime }}
+
+      - name: Package for macOS
+        if: startsWith(matrix.runtime, 'osx')
+        run: >
+          vpk pack
+          --packId Courier
+          --packVersion ${{ steps.version.outputs.value }}
+          --packDir publish
+          --mainExe Courier.App
+          --packTitle Courier
+          --icon assets/courier.icns
+          --runtime ${{ matrix.runtime }}
+
+      - name: Package for Linux
+        if: startsWith(matrix.runtime, 'linux')
+        run: >
+          vpk pack
+          --packId Courier
+          --packVersion ${{ steps.version.outputs.value }}
+          --packDir publish
+          --mainExe Courier.App
+          --packTitle Courier
+          --icon assets/courier.png
+          --runtime ${{ matrix.runtime }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: courier-${{ matrix.runtime }}
+          path: Releases/*
+
+  publish:
+    needs: package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      # Velopack's own release files live alongside the installers: the app reads them
+      # to work out whether there is anything newer than what it is running.
+      - name: Gather everything into one folder
+        run: |
+          mkdir -p Releases
+          find artifacts -type f -exec cp -n {} Releases/ \;
+          ls -la Releases
+
+      - name: Publish the release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: Releases/*
+          generate_release_notes: true
+          fail_on_unmatched_files: true

@@ -42,17 +42,24 @@ waiting for one registration.
 
     dotnet run --project src/Courier.App
 
-## Building a release
+## Releasing
 
-One self-contained executable per platform, with no runtime to install:
+Tag a commit and GitHub Actions does the rest:
 
-    dotnet publish src/Courier.App -c Release -r osx-arm64
-    dotnet publish src/Courier.App -c Release -r win-x64
-    dotnet publish src/Courier.App -c Release -r linux-x64
+    git tag v1.0.1 && git push origin v1.0.1
 
-Each produces a single compressed executable of about 55 MB in
-`src/Courier.App/bin/Release/net10.0/<platform>/publish/`. Double-click it; there is
-nothing to install first.
+The workflow runs the tests, then builds and packages on four real runners — Windows,
+Linux, Apple silicon and Intel Macs — because an installer has to be made on the system
+it installs onto. It publishes the installers to a GitHub release, alongside the small
+manifest Courier reads to notice that a newer version exists.
+
+Courier then updates itself: **Setup → Updates → Check for updates** downloads it and
+offers to restart into it. That only works in a copy installed from a release; run from
+a build folder there is nothing to replace, and it says so rather than failing quietly.
+
+To build one locally without packaging:
+
+    dotnet publish src/Courier.App -c Release -r osx-arm64 -o publish
 
 ## Tests
 

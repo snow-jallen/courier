@@ -5,18 +5,26 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>../../assets/courier.ico</ApplicationIcon>
+    <AssemblyVersion>1.0.0</AssemblyVersion>
+    <FileVersion>1.0.0</FileVersion>
+    <Version>1.0.0</Version>
+    <Product>Courier</Product>
+    <Company>Courier</Company>
 
-    <!-- One double-clickable file per platform, with no runtime to install first.
-         Compressed rather than trimmed: EF Core's model building uses reflection that
-         the trimmer cannot see, and a trimmed build fails at run time rather than at
-         build time, which is the worst way to find out. -->
-    <PublishSingleFile>true</PublishSingleFile>
+    <!-- Published as a folder, not a single file: Velopack packages that folder into
+         an installer and replaces it wholesale when updating, and cannot do either to a
+         self-extracting executable. Not trimmed either — EF Core builds its model by
+         reflection the trimmer cannot see, and a trimmed build fails at run time rather
+         than at build time. -->
     <SelfContained>true</SelfContained>
-    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
-    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
     <DebugType>none</DebugType>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
   </PropertyGroup>
+
+  <ItemGroup>
+    <AvaloniaResource Include="courier-icon.png" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Avalonia" Version="12.1.2" />
@@ -28,6 +36,7 @@
       <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
     </PackageReference>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <PackageReference Include="Velopack" Version="1.2.0" />
   </ItemGroup>
 
   <ItemGroup>
