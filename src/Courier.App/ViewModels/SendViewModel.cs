@@ -222,7 +222,7 @@ public sealed partial class SendViewModel(AppServices services, ISettingsStore s
         {
             var settings = store.Load();
             var sender = new VoiceSender(new TwilioGateway(settings.Twilio), settings.Twilio);
-            var session = await sender.StartRecordingAsync(Signed);
+            var session = await sender.StartRecordingAsync();
 
             if (session is null || session.CallSid.Length == 0)
             {

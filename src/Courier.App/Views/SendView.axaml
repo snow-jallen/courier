@@ -158,7 +158,7 @@
             <RadioButton GroupName="voicemode" IsChecked="{Binding SpeakAloud}" FontSize="13"
                          Content="Read the message out — nothing to record, ready now"/>
             <RadioButton GroupName="voicemode" IsChecked="{Binding UseMyVoice}" FontSize="13"
-                         Content="In my own voice — Courier rings you and reads you the message to read back"/>
+                         Content="In my own voice — Courier rings you, you read it off the screen"/>
             <StackPanel Orientation="Horizontal" Spacing="9">
               <Button Content="Record it now" Command="{Binding RecordVoiceCommand}"
                       IsEnabled="{Binding !VoiceBusy}" IsVisible="{Binding UseMyVoice}"/>

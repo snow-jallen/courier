@@ -230,9 +230,8 @@ options:
 
 - **Read the message out.** Twilio reads your words aloud. Nothing to record and ready
   immediately — right for a short, factual announcement.
-- **In my own voice.** Courier rings you, reads your own message back so you are not
-  improvising the wording of something you wrote ten minutes ago, then beeps. Read it,
-  hang up, and Courier collects the recording.
+- **In my own voice.** Courier rings you and asks you to record after the beep. Read
+  your message off the screen, hang up, and Courier collects the recording.
 
 Either way, **Call me and play it** rings you and plays exactly what everyone else will
 hear. Worth doing once before a message goes to three hundred people.

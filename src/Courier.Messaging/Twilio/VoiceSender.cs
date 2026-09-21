@@ -92,17 +92,16 @@ public sealed class VoiceSender(ITwilioGateway gateway, TwilioSettings settings)
     /// <summary>Rings the user so they can read this message aloud. They hang up when
     /// done; the recording is then fetched with <see cref="CollectRecordingAsync"/>.
     ///
-    /// The script is read to them first, because nobody can improvise the wording of an
-    /// announcement they wrote ten minutes ago and have not looked at since.</summary>
-    public async Task<RecordingCall?> StartRecordingAsync(
-        string script = "", CancellationToken cancellation = default)
+    /// The call does not read the message out first: the person who wrote it is looking
+    /// at it on screen, and being read their own words back is a delay, not a help.</summary>
+    public async Task<RecordingCall?> StartRecordingAsync(CancellationToken cancellation = default)
     {
         if (!settings.IsComplete || string.IsNullOrWhiteSpace(settings.TestNumber)) return null;
 
         try
         {
             var sid = await gateway.StartCallAsync(
-                settings.FromNumber, settings.TestNumber, RecordPrompt(script), cancellation);
+                settings.FromNumber, settings.TestNumber, RecordPrompt, cancellation);
             return new RecordingCall(sid,
                 $"Courier is ringing {settings.TestNumber}. Speak your message after the beep, then hang up.");
         }
@@ -135,18 +134,11 @@ public sealed class VoiceSender(ITwilioGateway gateway, TwilioSettings settings)
         }
     }
 
-    private static string RecordPrompt(string script)
-    {
-        var read = script.Trim().Length > 0
-            ? $"<Say voice=\"Polly.Joanna\">Your message reads: {SecurityElement.Escape(script)}</Say>"
-            : "";
-
-        return "<Response>"
-             + read
-             + "<Say voice=\"Polly.Joanna\">Read your message after the beep. Hang up when you are finished.</Say>"
-             + "<Record maxLength=\"180\" playBeep=\"true\" trim=\"trim-silence\"/>"
-             + "</Response>";
-    }
+    private const string RecordPrompt =
+        "<Response>" +
+        "<Say voice=\"Polly.Joanna\">Read your message after the beep, then hang up.</Say>" +
+        "<Record maxLength=\"180\" playBeep=\"true\" trim=\"trim-silence\"/>" +
+        "</Response>";
 
     private static string Play(string recordingUrl) =>
         $"<Response><Play>{SecurityElement.Escape(recordingUrl)}</Play></Response>";

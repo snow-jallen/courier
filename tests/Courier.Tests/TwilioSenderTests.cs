@@ -252,17 +252,19 @@ public sealed class TwilioSenderTests
     }
 
     [Fact]
-    public async Task Recording_reads_the_script_back_before_the_beep()
+    public async Task Recording_just_asks_for_the_message_and_beeps()
     {
         var twilio = new FakeTwilio();
-        var session = await new VoiceSender(twilio, Configured)
-            .StartRecordingAsync("Dinner Friday at 6:30.");
+        var session = await new VoiceSender(twilio, Configured).StartRecordingAsync();
 
         Assert.NotNull(session);
         var call = Assert.Single(twilio.Calls);
         Assert.Equal("+14355550164", call.To);
-        Assert.Contains("Dinner Friday at 6:30.", call.Twiml, StringComparison.Ordinal);
+        Assert.Contains("after the beep", call.Twiml, StringComparison.Ordinal);
         Assert.Contains("<Record", call.Twiml, StringComparison.Ordinal);
+
+        // The message is not read back: whoever wrote it is looking at it on screen.
+        Assert.True(call.Twiml.Length < 220, $"the prompt has grown a script: {call.Twiml}");
     }
 
     [Fact]
