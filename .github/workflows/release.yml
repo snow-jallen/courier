@@ -1,28 +1,38 @@
 name: Release
 
-# Tag a commit and this builds, packages and publishes it:
+# Every push to main becomes a release. The version is 1.0.<run number>, which always
+# goes up and never has to be decided — Velopack only cares that it increases.
 #
-#     git tag v1.0.1 && git push origin v1.0.1
+# Put [skip release] in a commit message to push without building one.
 #
-# Each platform has to be packaged on itself — Velopack builds a Windows installer
-# only on Windows, and needs macOS's own tools for a .app bundle — so the matrix is
-# three real runners rather than one cross-compiling.
+# Each platform has to be packaged on itself — Velopack builds a Windows installer only
+# on Windows, and needs macOS's own tools for a .app bundle — so the matrix is four real
+# runners rather than one cross-compiling.
 on:
   push:
-    tags: ['v*']
+    branches: [main]
   workflow_dispatch:
-    inputs:
-      version:
-        description: 'Version to build, without the leading v'
-        required: true
+
+# Two pushes in quick succession queue rather than race. Cancelling a half-finished
+# release would leave some platforms published and others not.
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 permissions:
   contents: write
 
 jobs:
   test:
+    if: "!contains(github.event.head_commit.message, '[skip release]')"
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.value }}
     steps:
+      - name: Work out the version
+        id: version
+        run: echo "value=1.0.${{ github.run_number }}" >> "$GITHUB_OUTPUT"
+
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
@@ -52,16 +62,6 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
-      - name: Work out the version
-        id: version
-        shell: bash
-        run: |
-          if [ -n "${{ github.event.inputs.version }}" ]; then
-            echo "value=${{ github.event.inputs.version }}" >> "$GITHUB_OUTPUT"
-          else
-            echo "value=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Install the packaging tool
         run: dotnet tool install -g vpk
 
@@ -71,14 +71,14 @@ jobs:
           -c Release
           -r ${{ matrix.runtime }}
           -o publish
-          -p:Version=${{ steps.version.outputs.value }}
+          -p:Version=${{ needs.test.outputs.version }}
 
       - name: Package for Windows
         if: startsWith(matrix.runtime, 'win')
         run: >
           vpk pack
           --packId Courier
-          --packVersion ${{ steps.version.outputs.value }}
+          --packVersion ${{ needs.test.outputs.version }}
           --packDir publish
           --mainExe Courier.App.exe
           --packTitle Courier
@@ -90,7 +90,7 @@ jobs:
         run: >
           vpk pack
           --packId Courier
-          --packVersion ${{ steps.version.outputs.value }}
+          --packVersion ${{ needs.test.outputs.version }}
           --packDir publish
           --mainExe Courier.App
           --packTitle Courier
@@ -102,7 +102,7 @@ jobs:
         run: >
           vpk pack
           --packId Courier
-          --packVersion ${{ steps.version.outputs.value }}
+          --packVersion ${{ needs.test.outputs.version }}
           --packDir publish
           --mainExe Courier.App
           --packTitle Courier
@@ -115,7 +115,7 @@ jobs:
           path: Releases/*
 
   publish:
-    needs: package
+    needs: [test, package]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
@@ -133,6 +133,8 @@ jobs:
       - name: Publish the release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: v${{ needs.test.outputs.version }}
+          name: Courier ${{ needs.test.outputs.version }}
           files: Releases/*
           generate_release_notes: true
           fail_on_unmatched_files: true
