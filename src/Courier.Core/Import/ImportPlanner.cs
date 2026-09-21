@@ -49,10 +49,12 @@ public static class ImportPlanner
             else unchanged++;
         }
 
-        var deactivated = unmatched.Where(e => e.IsActive).ToList();
+        // Somebody added by hand is not in the export and never will be, so their
+        // absence from it is not evidence of anything.
+        var deactivated = unmatched.Where(e => e.IsActive && !e.AddedByHand).ToList();
 
         var warnings = new List<string>();
-        var activeBefore = existing.Count(e => e.IsActive);
+        var activeBefore = existing.Count(e => e.IsActive && !e.AddedByHand);
         if (activeBefore > 0 && deactivated.Count > activeBefore * DeactivationAlarmRatio)
             warnings.Add(
                 $"This import would mark {deactivated.Count} of {activeBefore} people inactive. " +

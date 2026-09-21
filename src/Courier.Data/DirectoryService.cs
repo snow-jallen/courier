@@ -92,6 +92,58 @@ public sealed class DirectoryService(CourierDbContext db)
         await db.SaveChangesAsync(cancellation);
     }
 
+    /// <summary>The stored people as the import planner sees them. One definition, used
+    /// by the importer and by anything else that needs it — having two is how a person
+    /// added by hand quietly became a person the import was willing to deactivate.</summary>
+    public static IQueryable<ExistingPerson> ExistingPeople(CourierDbContext db) =>
+        db.People.Select(p => new ExistingPerson(
+            p.Id, p.LastName, p.FirstName, p.BirthMonth, p.BirthDay,
+            p.Ward, p.Age, p.Address, p.LcrEmail, p.LcrPhone, p.IsActive)
+        {
+            AddedByHand = p.Source == PersonSource.Local,
+        });
+
+    /// <summary>Adds somebody who is not in the export — a spouse, a visitor, anyone
+    /// the directory does not carry. They are marked as added by hand, which is what
+    /// stops the next import deciding they have left.</summary>
+    public async Task<Guid> AddPersonAsync(
+        string lastName,
+        string firstName,
+        string? ward,
+        string? email,
+        string? phone,
+        string? address,
+        string? notes,
+        DateOnly today,
+        string defaultAreaCode = LcrNormalizer.DefaultAreaCode,
+        CancellationToken cancellation = default)
+    {
+        var last = (lastName ?? "").Trim();
+        var first = (firstName ?? "").Trim();
+        if (last.Length == 0) throw new ArgumentException("A person needs a surname.", nameof(lastName));
+
+        var person = new Person
+        {
+            LastName = last,
+            FirstName = first,
+            DisplayName = first.Length > 0 ? $"{last}, {first}" : last,
+            Ward = Wards.Snap(ward) ?? Clean(ward),
+            Source = PersonSource.Local,
+            Notes = Clean(notes),
+            FirstSeenOn = today,
+            LastSeenOn = today,
+        };
+        db.People.Add(person);
+
+        Record(person, ContactKind.Email, Clean(email), Clean(email)?.ToLowerInvariant(), false, today);
+        var (rawPhone, e164, assumed) = LcrNormalizer.ParsePhone(phone, defaultAreaCode);
+        Record(person, ContactKind.Phone, rawPhone, e164, assumed, today);
+        Record(person, ContactKind.Address, Clean(address), Clean(address), false, today);
+
+        await db.SaveChangesAsync(cancellation);
+        return person.Id;
+    }
+
     /// <summary>Corrects what Courier holds for someone.
     ///
     /// An edit is never written over the fields an import owns. It is recorded as a new

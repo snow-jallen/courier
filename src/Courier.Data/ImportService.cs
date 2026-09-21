@@ -14,11 +14,7 @@ public sealed class ImportService(CourierDbContext db)
         var report = LcrReportParser.Parse(pdfPath);
         var incoming = report.Rows.Select(r => LcrNormalizer.Normalize(r)).ToList();
 
-        var existing = await db.People
-            .Select(p => new ExistingPerson(
-                p.Id, p.LastName, p.FirstName, p.BirthMonth, p.BirthDay,
-                p.Ward, p.Age, p.Address, p.LcrEmail, p.LcrPhone, p.IsActive))
-            .ToListAsync(cancellation);
+        var existing = await DirectoryService.ExistingPeople(db).ToListAsync(cancellation);
 
         return (report, ImportPlanner.Plan(incoming, existing));
     }
@@ -118,6 +114,9 @@ public sealed class ImportService(CourierDbContext db)
         person.LcrPhone = incoming.PhoneRaw;
         person.LastSeenOn = today;
         person.UpdatedAt = DateTimeOffset.UtcNow;
+
+        // The export now carries them, so they are LCR's to manage from here.
+        person.Source = PersonSource.Lcr;
     }
 
     /// <summary>Keeps the contact points in step with what LCR printed.

@@ -65,16 +65,51 @@ public sealed partial class PersonRow : ObservableObject
 /// <summary>Correcting what Courier holds for one person. Saving does not overwrite
 /// what the export said — it records the correction, which is what puts it on the
 /// "to enter in LCR" list and what keeps it through the next import.</summary>
-public sealed partial class PersonEditor(Recipient person, Func<PersonEditor, Task> save, Action close)
-    : ObservableObject
+public sealed partial class PersonEditor : ObservableObject
 {
-    public Guid Id { get; } = person.Id;
-    public string Name { get; } = person.SortName;
-    public string Ward { get; } = person.Ward ?? "no ward";
+    private readonly Func<PersonEditor, Task> _save;
+    private readonly Action _close;
 
-    [ObservableProperty] private string _email = person.Email ?? "";
-    [ObservableProperty] private string _phone = person.Phone ?? "";
-    [ObservableProperty] private string _address = person.Address ?? "";
+    /// <summary>Correcting somebody already in the directory.</summary>
+    public PersonEditor(Recipient person, Func<PersonEditor, Task> save, Action close)
+    {
+        _save = save;
+        _close = close;
+        Id = person.Id;
+        Name = person.SortName;
+        Ward = person.Ward ?? "no ward";
+        _lastName = person.LastName;
+        _firstName = person.FirstName;
+        _wardChoice = person.Ward ?? "";
+        _email = person.Email ?? "";
+        _phone = person.Phone ?? "";
+        _address = person.Address ?? "";
+    }
+
+    /// <summary>Adding somebody the export does not carry.</summary>
+    public PersonEditor(Func<PersonEditor, Task> save, Action close)
+    {
+        _save = save;
+        _close = close;
+        IsNew = true;
+        Name = "Someone new";
+        Ward = "not in the export";
+    }
+
+    public Guid Id { get; }
+    public string Name { get; }
+    public string Ward { get; }
+    public bool IsNew { get; }
+
+    [ObservableProperty] private string _lastName = "";
+    [ObservableProperty] private string _firstName = "";
+    [ObservableProperty] private string _wardChoice = "";
+
+    public IReadOnlyList<string> WardOptions { get; } = ["", .. Wards.All];
+
+    [ObservableProperty] private string _email = "";
+    [ObservableProperty] private string _phone = "";
+    [ObservableProperty] private string _address = "";
     [ObservableProperty] private string _notes = "";
     [ObservableProperty] private string _status = "";
     [ObservableProperty] private bool _busy;
@@ -82,13 +117,19 @@ public sealed partial class PersonEditor(Recipient person, Func<PersonEditor, Ta
     [RelayCommand]
     private async Task Save()
     {
+        if (IsNew && LastName.Trim().Length == 0)
+        {
+            Status = "A surname is needed, so there is something to sort them by.";
+            return;
+        }
+
         Busy = true;
-        try { await save(this); }
+        try { await _save(this); }
         catch (Exception e) { Status = $"Not saved. {e.Message}"; }
         finally { Busy = false; }
     }
 
-    [RelayCommand] private void Cancel() => close();
+    [RelayCommand] private void Cancel() => _close();
 }
 
 public sealed partial class PeopleViewModel(AppServices services) : ObservableObject
@@ -159,6 +200,15 @@ public sealed partial class PeopleViewModel(AppServices services) : ObservableOb
             : $"{shown.Count} of {active} people";
     }
 
+    /// <summary>Somebody the export does not carry — a spouse, a visitor, anybody the
+    /// directory has not caught up with.</summary>
+    [RelayCommand]
+    private void AddPerson()
+    {
+        EditStatus = "";
+        Editing = new PersonEditor(SaveDetailsAsync, () => Editing = null);
+    }
+
     private void StartEditing(PersonRow row)
     {
         EditStatus = "";
@@ -167,6 +217,21 @@ public sealed partial class PeopleViewModel(AppServices services) : ObservableOb
 
     private async Task SaveDetailsAsync(PersonEditor editor)
     {
+        if (editor.IsNew)
+        {
+            await using (var adding = services.Db())
+            {
+                await new DirectoryService(adding).AddPersonAsync(
+                    editor.LastName, editor.FirstName, editor.WardChoice,
+                    editor.Email, editor.Phone, editor.Address, editor.Notes, AppServices.Today);
+            }
+
+            EditStatus = $"Added {editor.LastName.Trim()}. They are not in the export, so no import will remove them.";
+            Editing = null;
+            await LoadAsync();
+            return;
+        }
+
         int added;
         await using (var db = services.Db())
         {

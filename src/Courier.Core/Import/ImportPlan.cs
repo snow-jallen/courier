@@ -14,7 +14,12 @@ public sealed record ExistingPerson(
     string? Address,
     string? Email,
     string? Phone,
-    bool IsActive);
+    bool IsActive)
+{
+    /// <summary>True for somebody added by hand, who will never be in an export. Their
+    /// absence from one says nothing, so an import must leave them alone.</summary>
+    public bool AddedByHand { get; init; }
+}
 
 public sealed record FieldChange(string Field, string? From, string? To);
 

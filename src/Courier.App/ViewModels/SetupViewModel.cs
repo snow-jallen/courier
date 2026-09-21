@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using Courier.Messaging;
 using Courier.Messaging.Email;
 using Courier.Messaging.Settings;
+using Courier.Messaging.Android;
 using Courier.Messaging.Mac;
 using Courier.Messaging.Twilio;
 using Courier.Core.Domain;
@@ -15,10 +16,15 @@ public sealed partial class SetupViewModel : ObservableObject
     private readonly AppServices _services;
     private readonly ISettingsStore _store;
 
-    public SetupViewModel(AppServices services, ISettingsStore store)
+    private readonly bool _isMac;
+
+    /// <summary><paramref name="isMac"/> is only passed by tests; the app reads the
+    /// platform it is actually running on.</summary>
+    public SetupViewModel(AppServices services, ISettingsStore store, bool? isMac = null)
     {
         _services = services;
         _store = store;
+        _isMac = isMac ?? OperatingSystem.IsMacOS();
 
         var settings = store.Load();
         _senderName = settings.Sender.Name;
@@ -31,7 +37,10 @@ public sealed partial class SetupViewModel : ObservableObject
         _fromNumber = settings.Twilio.FromNumber;
         _testNumber = settings.Twilio.TestNumber;
         _messagingServiceSid = settings.Twilio.MessagingServiceSid;
-        _useMacMessages = settings.TextVia == TextTransport.MacMessages;
+        _textVia = settings.TextVia;
+        _gatewayUrl = settings.AndroidGateway.BaseUrl;
+        _gatewayUser = settings.AndroidGateway.Username;
+        _gatewayPassword = settings.AndroidGateway.Password;
         _recordingUrl = settings.Twilio.VoiceRecordingUrl;
         _databasePath = services.DatabasePath;
         _settingsPath = store.Path;
@@ -71,14 +80,53 @@ public sealed partial class SetupViewModel : ObservableObject
 
     public bool SendsRichText => MessagingServiceSid.Trim().Length > 0;
 
-    /// <summary>Texting through the Messages app on this Mac instead of a service, so
-    /// messages come from the user's own number and replies land in their own app.</summary>
-    [ObservableProperty] private bool _useMacMessages;
+    /// <summary>Where texts leave from: a service, or the user's own phone — through
+    /// the Messages app on a Mac for an iPhone, or through a gateway app for an
+    /// Android. Both phone routes send from the user's real number.</summary>
+    [ObservableProperty] private TextTransport _textVia;
 
-    public bool UseTwilioForText => !UseMacMessages;
-    public bool MacMessagesAvailable => OperatingSystem.IsMacOS();
+    [ObservableProperty] private string _gatewayUrl;
+    [ObservableProperty] private string _gatewayUser;
+    [ObservableProperty] private string _gatewayPassword;
 
-    partial void OnUseMacMessagesChanged(bool value) => OnPropertyChanged(nameof(UseTwilioForText));
+    public bool UseTwilioForText
+    {
+        get => TextVia == TextTransport.Twilio;
+        set { if (value) TextVia = TextTransport.Twilio; }
+    }
+
+    /// <summary>Only selectable on a Mac. The iPhone route works by driving the
+    /// Messages app, which exists nowhere else — so this is refused rather than
+    /// accepted and then failing at the moment somebody presses Send.</summary>
+    public bool UseIphone
+    {
+        get => TextVia == TextTransport.MacMessages;
+        set { if (value && IphoneRouteAvailable) TextVia = TextTransport.MacMessages; }
+    }
+
+    public bool UseAndroid
+    {
+        get => TextVia == TextTransport.AndroidGateway;
+        set { if (value) TextVia = TextTransport.AndroidGateway; }
+    }
+
+    /// <summary>The iPhone route drives the Messages app, which only exists on a Mac.
+    /// The Android route is an HTTP call, so it works from anywhere.</summary>
+    public bool IphoneRouteAvailable => _isMac;
+
+    /// <summary>True when the saved choice cannot work here — an iPhone route carried
+    /// over from a Mac, opened on Windows or Linux.</summary>
+    public bool TextRouteBlocked => TextVia == TextTransport.MacMessages && !IphoneRouteAvailable;
+
+    public string TextRouteBlockedMessage =>
+        "Texting from your iPhone needs Courier running on a Mac, because it works by asking the Messages app to send. "
+        + "On this computer, choose Twilio, or your Android phone if you have one. Your iPhone setting is kept for when you are back on the Mac.";
+
+    partial void OnTextViaChanged(TextTransport value)
+    {
+        foreach (var name in (string[])["UseTwilioForText", "UseIphone", "UseAndroid", "TextRouteBlocked"])
+            OnPropertyChanged(name);
+    }
 
     partial void OnMessagingServiceSidChanged(string value) => OnPropertyChanged(nameof(SendsRichText));
     [ObservableProperty] private string _recordingUrl;
@@ -90,7 +138,13 @@ public sealed partial class SetupViewModel : ObservableObject
 
     private CourierSettings Current => new()
     {
-        TextVia = UseMacMessages ? TextTransport.MacMessages : TextTransport.Twilio,
+        TextVia = TextVia,
+        AndroidGateway = new AndroidGatewaySettings
+        {
+            BaseUrl = GatewayUrl.Trim(),
+            Username = GatewayUser.Trim(),
+            Password = GatewayPassword.Trim(),
+        },
         Sender = new SenderIdentity(SenderName.Trim(), SenderCalling.Trim()),
         Email = new EmailSettings
         {
@@ -144,10 +198,14 @@ public sealed partial class SetupViewModel : ObservableObject
         try
         {
             _store.Save(Current);
-            IMessageSender sender = UseMacMessages
-                ? new MessagesTextSender(new AppleScriptRunner())
-                : new TextSender(new TwilioGateway(Current.Twilio), Current.Twilio);
-            var check = await sender.TestAsync(UseMacMessages ? TestNumber.Trim() : "");
+            IMessageSender sender = TextVia switch
+            {
+                TextTransport.MacMessages => new MessagesTextSender(new AppleScriptRunner()),
+                TextTransport.AndroidGateway => new AndroidGatewayTextSender(new HttpClient(), Current.AndroidGateway),
+                _ => new TextSender(new TwilioGateway(Current.Twilio), Current.Twilio),
+            };
+            var check = await sender.TestAsync(
+                TextVia == TextTransport.Twilio ? "" : TestNumber.Trim());
             TwilioOk = check.Ok;
             TwilioStatus = check.Message;
         }

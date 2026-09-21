@@ -31,10 +31,7 @@ public sealed class ImportServiceTests : IDisposable
         CourierDbContext db, IReadOnlyList<NormalizedPerson> people, DateOnly on)
     {
         var service = new ImportService(db);
-        var existing = await db.People
-            .Select(p => new ExistingPerson(p.Id, p.LastName, p.FirstName, p.BirthMonth, p.BirthDay,
-                p.Ward, p.Age, p.Address, p.LcrEmail, p.LcrPhone, p.IsActive))
-            .ToListAsync();
+        var existing = await DirectoryService.ExistingPeople(db).ToListAsync();
         var plan = ImportPlanner.Plan(people, existing);
         return await service.ApplyAsync(Report(people.Count), plan, on);
     }
