@@ -177,7 +177,10 @@ or MailHog and watch the message arrive there.
 
 ## Privacy
 
-The database is a single unencrypted SQLite file in `~/Documents/Courier/`. That is a
+The database is a single unencrypted SQLite file, in `~/Documents/Courier/` unless you
+point Courier somewhere else — Setup can open a different one or start a fresh one
+anywhere you like, and remembers which. Settings stay in the usual folder whatever the
+database does, since they are what records where it went. That is a
 deliberate choice — the LCR export it comes from is unencrypted too, so encrypting the
 copy would move the weak point rather than remove it. What matters instead is that
 whoever uses Courier understands what they are holding. The app says so plainly on the

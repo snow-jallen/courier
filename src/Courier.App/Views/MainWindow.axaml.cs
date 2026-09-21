@@ -7,7 +7,7 @@ using Courier.App.ViewModels;
 
 namespace Courier.App.Views;
 
-public partial class MainWindow : Window, IFilePicker, IClipboardWriter
+public partial class MainWindow : Window, IFilePicker, IClipboardWriter, IDatabasePicker
 {
     private MainWindowViewModel? _model;
 
@@ -31,6 +31,33 @@ public partial class MainWindow : Window, IFilePicker, IClipboardWriter
             FileTypeFilter = [new FilePickerFileType("PDF") { Patterns = ["*.pdf"] }],
         });
         return files.Count > 0 ? files[0].TryGetLocalPath() : null;
+    }
+
+    private static FilePickerFileType CourierDatabase =>
+        new("Courier directory") { Patterns = ["*.db"] };
+
+    public async Task<string?> PickExistingAsync()
+    {
+        var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = "Open a Courier directory",
+            AllowMultiple = false,
+            FileTypeFilter = [CourierDatabase],
+        });
+        return files.Count > 0 ? files[0].TryGetLocalPath() : null;
+    }
+
+    public async Task<string?> PickNewAsync()
+    {
+        var file = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+        {
+            Title = "Where should the new directory be kept?",
+            SuggestedFileName = "contacts.db",
+            DefaultExtension = "db",
+            FileTypeChoices = [CourierDatabase],
+            ShowOverwritePrompt = true,
+        });
+        return file?.TryGetLocalPath();
     }
 
     public async Task CopyAsync(string text)
