@@ -19,7 +19,9 @@ Built for one person on one computer, with no server and no account to sign into
    makes it survive every future import and what puts it on the **To enter in LCR**
    list, so the official record can catch up. That list clears itself once an export
    comes back carrying the detail.
-3. **Send.** Write a message once. It goes out by e-mail, text, or a phone call,
+3. **Send.** Choose who by ward, channel, age, birthday month, or a search that reads
+   notes as well as names — so writing "choir" or "#ride-needed" in somebody's note is
+   all the tagging system there is, and all there needs to be. Write a message once. It goes out by e-mail, text, or a phone call,
    split by what each person chose — or all one way, when something is urgent enough to
    text everybody. Calls read the message out, or play a recording of you reading it
    off the screen, chosen per message. Either way you can have Courier ring you first and play back

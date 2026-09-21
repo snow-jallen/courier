@@ -16,7 +16,7 @@
     </Grid>
 
     <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Margin="0,18,0,12" ColumnSpacing="9">
-      <TextBox Grid.Column="0" PlaceholderText="Search a name, email or phone"
+      <TextBox Grid.Column="0" PlaceholderText="Search a name, email, phone or note"
                Text="{Binding Search}"/>
       <ComboBox Grid.Column="1" MinWidth="170"
                 ItemsSource="{Binding WardOptions}" SelectedItem="{Binding Ward}"/>
@@ -134,6 +134,8 @@
             <TextBlock Classes="eyebrow" Text="NOTE — JUST FOR YOU"/>
             <TextBox Text="{Binding Notes}" AcceptsReturn="True" Height="54" TextWrapping="Wrap"
                      PlaceholderText="Hard of hearing — call the landline."/>
+            <TextBlock TextWrapping="Wrap" FontSize="11.5" Foreground="{DynamicResource Ink3}"
+                       Text="Searching looks at notes too, so a word like “choir” or “#ride-needed” here becomes a way to gather people on the Send screen."/>
           </StackPanel>
 
           <Border Background="{DynamicResource AccentSoft}" CornerRadius="8" Padding="11,9">
