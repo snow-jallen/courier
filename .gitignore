@@ -10,3 +10,7 @@ tests/Courier.Tests/Fixtures/private/
 *.db-shm
 *.db-wal
 settings.json
+
+# Isolated worktrees and the subagent-driven-development scratch workspace.
+.claude/worktrees/
+.superpowers/
