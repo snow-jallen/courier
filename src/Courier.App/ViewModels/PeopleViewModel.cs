@@ -28,8 +28,10 @@ public sealed partial class PersonRow : ObservableObject
     public string Name => Person.SortName;
     public string Ward => Person.Ward ?? "—";
     public string Email => Person.Email ?? "—";
-    public string Phone => Person.Phone ?? "—";
+    public string Phone => Person.Phone is null ? "—" : Person.PhoneForDisplay;
     public string Age => Person.Age?.ToString() ?? "—";
+    public string Note => Person.Notes ?? "";
+    public bool HasNote => Person.HasNote;
     public string Birthday => Person.BirthMonth is int m && Person.BirthDay is int d
         ? $"{d} {Months[m - 1]}" : "—";
 
@@ -82,8 +84,9 @@ public sealed partial class PersonEditor : ObservableObject
         _firstName = person.FirstName;
         _wardChoice = person.Ward ?? "";
         _email = person.Email ?? "";
-        _phone = person.Phone ?? "";
+        _phone = person.PhoneForDisplay;
         _address = person.Address ?? "";
+        _notes = person.Notes ?? "";
     }
 
     /// <summary>Adding somebody the export does not carry.</summary>

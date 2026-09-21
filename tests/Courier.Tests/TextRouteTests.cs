@@ -107,7 +107,7 @@ public sealed class TextRouteTests : IDisposable
 
     public void Dispose()
     {
-        Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
-        if (Directory.Exists(_folder)) Directory.Delete(_folder, recursive: true);
+        try { if (Directory.Exists(_folder)) Directory.Delete(_folder, recursive: true); }
+        catch (IOException) { /* a temp folder left behind harms nothing */ }
     }
 }

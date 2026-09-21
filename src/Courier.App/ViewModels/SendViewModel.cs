@@ -62,7 +62,14 @@ public sealed partial class SendRow : ObservableObject
     private Recipient AsChosen => Person with { PreferredChannel = Channel };
 
     public bool CanReceive => AsChosen.CanReceive;
-    public string GoesTo => AsChosen.Reachability.Address ?? Problem;
+    /// <summary>The address this person would actually be reached at, in the form
+    /// people read rather than the form a service dials.</summary>
+    public string GoesTo => AsChosen.Reachability is { CanReceive: true, Address: { } address }
+        ? (AsChosen.Reachability.Channel is Channel.Email ? address : PhoneFormat.ForDisplay(address))
+        : Problem;
+
+    public string Note => Person.Notes ?? "";
+    public bool HasNote => Person.HasNote;
 
     private string Problem => AsChosen.Reachability.Reason switch
     {
