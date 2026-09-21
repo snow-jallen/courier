@@ -165,6 +165,37 @@ public sealed class MessageLogTests : IDisposable
         Assert.Contains("Sent", text, StringComparison.Ordinal);
     }
 
+    /// <summary>The whole point of the redaction: a log a user sends to somebody helping
+    /// them must not be a copy of the directory.</summary>
+    [Fact]
+    public async Task Nothing_identifying_reaches_the_log_when_a_send_goes_wrong()
+    {
+        var folder = Path.Combine(Path.GetTempPath(), $"courier-privacy-{Guid.NewGuid():N}");
+        try
+        {
+            var log = new Courier.App.JsonlActivityLog(folder);
+            using var _ = Courier.Core.Diagnostics.Log.Use(log);
+
+            using var db = Open();
+            var person = await PersonAsync(db, "Ashgrove", Channel.Email, email: "adelaide@example.com");
+
+            await Broadcast(db, SendOutcome.Failed("Gmail would not deliver to adelaide@example.com."))
+                .SendAsync("Stake dinner", "Dinner is Friday at 6:30.", "Manti 2nd Ward (1)", [person]);
+
+            var written = await File.ReadAllTextAsync(log.TodaysFile);
+
+            Assert.Contains("delivery.problem", written, StringComparison.Ordinal);
+            Assert.DoesNotContain("adelaide@example.com", written, StringComparison.Ordinal);
+            Assert.DoesNotContain("Ashgrove", written, StringComparison.Ordinal);
+            Assert.DoesNotContain("Dinner is Friday", written, StringComparison.Ordinal);
+        }
+        finally
+        {
+            try { if (Directory.Exists(folder)) Directory.Delete(folder, recursive: true); }
+            catch (IOException) { }
+        }
+    }
+
     public void Dispose()
     {
         try { if (File.Exists(_path)) File.Delete(_path); }

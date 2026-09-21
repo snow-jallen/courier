@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using Courier.Core.Diagnostics;
 using Courier.Core.Import;
 using Courier.Data;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -83,6 +84,12 @@ public sealed partial class ImportViewModel(AppServices services, IFilePicker pi
                     "Kept and marked inactive — nothing is deleted"));
 
             foreach (var w in plan.Warnings) Warnings.Add(w);
+
+            Log.Record("import.read", Log.Details(
+                ("file", report.FileName), ("pages", report.PageCount), ("rows", report.Rows.Count),
+                ("added", plan.Added.Count), ("updated", plan.Updated.Count),
+                ("deactivated", plan.Deactivated.Count), ("reactivated", plan.Reactivated.Count),
+                ("unchanged", plan.Unchanged), ("warnings", plan.Warnings.Count)));
             OnPropertyChanged(nameof(HasWarnings));
 
             Status = plan.Added.Count + plan.Updated.Count + plan.Deactivated.Count + plan.Reactivated.Count == 0
@@ -91,12 +98,14 @@ public sealed partial class ImportViewModel(AppServices services, IFilePicker pi
         }
         catch (LcrReportException e)
         {
+            Log.Failure("import.read", e, Log.Details(("path", Redact.Path(path))));
             Failed = true;
             HasFile = false;
             Status = e.Message;
         }
         catch (Exception e)
         {
+            Log.Failure("import.read", e, Log.Details(("path", Redact.Path(path))));
             Failed = true;
             HasFile = false;
             Status = $"That file could not be read. {e.Message}";
@@ -120,6 +129,8 @@ public sealed partial class ImportViewModel(AppServices services, IFilePicker pi
             await using var db = services.Db();
             await new ImportService(db).ApplyAsync(_report, _plan, AppServices.Today);
 
+            Log.Record("import.apply", Log.Details(
+                ("added", Added), ("updated", Updated), ("deactivated", Deactivated)));
             Status = $"Saved. {Added} added, {Updated} updated, {Deactivated} marked inactive.";
             HasFile = false;
             Changes.Clear();
@@ -130,6 +141,7 @@ public sealed partial class ImportViewModel(AppServices services, IFilePicker pi
         }
         catch (Exception e)
         {
+            Log.Failure("import.apply", e);
             Failed = true;
             Status = $"Nothing was saved. {e.Message}";
         }

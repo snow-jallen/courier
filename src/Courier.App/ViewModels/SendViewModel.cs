@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Courier.Core.Diagnostics;
 using Courier.Core.Domain;
 using Courier.Data;
 using Courier.Messaging;
@@ -224,6 +225,8 @@ public sealed partial class SendViewModel(AppServices services, ISettingsStore s
             var sender = new VoiceSender(new TwilioGateway(settings.Twilio), settings.Twilio);
             var session = await sender.StartRecordingAsync();
 
+            Log.Record("voice.record", Log.Details(("started", session is { CallSid.Length: > 0 })));
+
             if (session is null || session.CallSid.Length == 0)
             {
                 VoiceStatus = session?.Message ?? "Fill in your Twilio details and your own number on the Setup screen first.";
@@ -267,6 +270,11 @@ public sealed partial class SendViewModel(AppServices services, ISettingsStore s
             var outcome = await sender.PreviewAsync(
                 settings.Twilio.TestNumber.Trim(),
                 new OutgoingMessage(Subject, Signed, HasRecording ? RecordingUrl : null, SpeakAloud));
+
+            Log.Record("voice.preview", Log.Details(
+                ("ok", outcome.Status == SendStatus.Sent),
+                ("mode", HasRecording ? "recording" : "spoken"),
+                ("error", Redact.Failure(outcome.Error))));
 
             VoiceStatus = outcome.Status == SendStatus.Sent
                 ? $"Calling {PhoneFormat.ForDisplay(settings.Twilio.TestNumber)} now — answer it to hear what they will hear."
@@ -439,6 +447,7 @@ public sealed partial class SendViewModel(AppServices services, ISettingsStore s
         CheckRoute();
         if (IsBlocked)
         {
+            Log.Record("send.blocked", Log.Details(("reason", BlockedReason)));
             Status = BlockedReason;
             return;
         }
@@ -468,6 +477,13 @@ public sealed partial class SendViewModel(AppServices services, ISettingsStore s
             var progress = new Progress<BroadcastProgress>(p =>
                 Status = $"Sending… {p.Done} of {p.Total} ({p.Who})");
 
+            Log.Record("send.start", Log.Details(
+                ("chosen", chosen.Count), ("email", EmailCount), ("text", TextCount), ("voice", VoiceCount),
+                ("via", Override?.ToWire() ?? "preference"),
+                ("textVia", settings.TextVia.ToString()),
+                ("voiceMode", HasRecording ? "recording" : SpeakAloud ? "spoken" : "none"),
+                ("body", Redact.Text(Signed)), ("subject", Redact.Text(Subject))));
+
             var batch = await service.SendAsync(
                 Subject, Signed, Describe(chosen.Count), chosen, progress, Override,
                 HasRecording ? RecordingUrl : null, SpeakAloud);
@@ -476,12 +492,16 @@ public sealed partial class SendViewModel(AppServices services, ISettingsStore s
             var failed = await CountAsync(db, batch.Id, Entities.DeliveryStatus.Failed);
             var skipped = await CountAsync(db, batch.Id, Entities.DeliveryStatus.Skipped);
 
+            Log.Record("send.done", Log.Details(
+                ("batch", batch.Id), ("sent", sent), ("failed", failed), ("skipped", skipped)));
+
             Status = $"Sent to {sent} {(sent == 1 ? "person" : "people")}."
                    + (failed > 0 ? $" {failed} failed." : "")
                    + (skipped > 0 ? $" {skipped} skipped." : "");
         }
         catch (Exception e)
         {
+            Log.Failure("send.stopped", e);
             Status = $"The send stopped. {e.Message} Anything already sent is recorded and will not go out twice.";
         }
         finally { Sending = false; }

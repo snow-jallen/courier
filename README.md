@@ -181,6 +181,22 @@ real mailbox. To try it without involving anyone, either send to yourself — wh
 the Test button does — or point Host and Port at a local mail catcher such as smtp4dev
 or MailHog and watch the message arrive there.
 
+## When somebody needs help
+
+Courier keeps a log beside its settings, one JSON object per line, thirty days of them.
+It records what the app was asked to do and what failed: which screens were opened, how
+big an import was, how many people a send reached, which credential test passed, the
+full exception chain when something broke.
+
+**It is safe to send to whoever is helping.** Names never go in it at all. An address is
+masked to `a…e@e…m` or `…42 (11 digits)` — enough to match against a person on screen,
+not enough to write to them. A provider's complaint has any address it quoted back taken
+out, because those messages routinely repeat the number that failed. Messages are
+recorded as a length and nothing else. A test asserts that a failed send leaves no name,
+address or message text anywhere in the file.
+
+Setup has a **Copy the recent log** button for pasting into an email.
+
 ## Privacy
 
 The database is a single unencrypted SQLite file, in `~/Documents/Courier/` unless you

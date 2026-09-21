@@ -1,3 +1,4 @@
+using Courier.Core.Diagnostics;
 using Courier.Core.Domain;
 using Courier.Data.Entities;
 using Courier.Messaging;
@@ -79,6 +80,13 @@ public sealed class BroadcastService(CourierDbContext db, IReadOnlyDictionary<Ch
                 delivery.CostMicros = outcome.CostMicros;
                 if (outcome.Status == SendStatus.Sent) delivery.SentAt = DateTimeOffset.UtcNow;
             }
+
+            if (delivery.Status is not DeliveryStatus.Sent)
+                Log.Record("delivery.problem", Log.Details(
+                    ("person", person.Id), ("channel", delivery.Channel.ToWire()),
+                    ("address", Redact.Address(delivery.Address)),
+                    ("status", delivery.Status.ToString()),
+                    ("reason", Redact.Failure(delivery.Error))));
 
             db.MessageDeliveries.Add(delivery);
             await db.SaveChangesAsync(cancellation);

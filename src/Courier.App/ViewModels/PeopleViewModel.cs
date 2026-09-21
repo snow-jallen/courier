@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Courier.Core.Diagnostics;
 using Courier.Core.Domain;
 using Courier.Data;
 
@@ -229,6 +230,10 @@ public sealed partial class PeopleViewModel(AppServices services) : ObservableOb
                     editor.Email, editor.Phone, editor.Address, editor.Notes, AppServices.Today);
             }
 
+            Log.Record("person.add", Log.Details(
+                ("ward", editor.WardChoice),
+                ("gaveEmail", editor.Email.Trim().Length > 0),
+                ("gavePhone", editor.Phone.Trim().Length > 0)));
             EditStatus = $"Added {editor.LastName.Trim()}. They are not in the export, so no import will remove them.";
             Editing = null;
             await LoadAsync();
@@ -242,6 +247,7 @@ public sealed partial class PeopleViewModel(AppServices services) : ObservableOb
                 editor.Id, editor.Email, editor.Phone, editor.Address, editor.Notes, AppServices.Today);
         }
 
+        Log.Record("person.edit", Log.Details(("person", editor.Id), ("newForLcr", added)));
         EditStatus = added switch
         {
             0 => $"Saved. Nothing new for LCR — {editor.Name} already matched.",
@@ -255,6 +261,7 @@ public sealed partial class PeopleViewModel(AppServices services) : ObservableOb
 
     private async Task SaveChannelAsync(Guid personId, Channel channel)
     {
+        Log.Record("person.channel", Log.Details(("person", personId), ("channel", channel.ToWire())));
         await using var db = services.Db();
         await new DirectoryService(db).SetPreferredChannelAsync(personId, channel);
 

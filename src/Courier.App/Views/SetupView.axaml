@@ -321,6 +321,35 @@
     </Border>
 
 
+    <!-- Getting help -->
+    <Border Classes="card" Margin="0,14,0,0" Padding="0">
+      <StackPanel>
+        <Border Background="{DynamicResource Surface2}" Padding="15,13"
+                BorderBrush="{DynamicResource Line}" BorderThickness="0,0,0,1">
+          <StackPanel Spacing="1">
+            <TextBlock Text="If something goes wrong" FontWeight="SemiBold" FontSize="14"
+                       Foreground="{DynamicResource Ink}"/>
+            <TextBlock Text="Courier keeps a record of what it was asked to do and what failed"
+                       FontSize="12" Foreground="{DynamicResource Ink3}"/>
+          </StackPanel>
+        </Border>
+        <StackPanel Margin="15" Spacing="12">
+          <Border Background="{DynamicResource Surface2}" CornerRadius="6" Padding="10,7"
+                  BorderBrush="{DynamicResource Line}" BorderThickness="1">
+            <TextBlock Text="{Binding LogFolder}" Classes="mono" TextWrapping="Wrap"
+                       Foreground="{DynamicResource Ink2}"/>
+          </Border>
+          <TextBlock TextWrapping="Wrap" FontSize="12.5" Foreground="{DynamicResource Ink2}"
+                     Text="Send this to whoever is helping you and they can see the sequence that led to a problem, rather than guessing. It is safe to share: it records which screens you opened, how many people were involved and what failed, but never a name, a phone number, an email address, or a word of any message you wrote."/>
+          <StackPanel Orientation="Horizontal" Spacing="9">
+            <Button Content="Copy the recent log" Command="{Binding CopyLogCommand}"
+                    IsVisible="{Binding CanCopyLog}"/>
+          </StackPanel>
+          <TextBlock Text="{Binding LogStatus}" FontSize="12.5" TextWrapping="Wrap"
+                     Foreground="{DynamicResource Good}"/>
+        </StackPanel>
+      </StackPanel>
+    </Border>
     </StackPanel>
   </ScrollViewer>
 
