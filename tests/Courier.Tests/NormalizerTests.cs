@@ -76,3 +76,28 @@ public sealed class NormalizerTests
         Assert.Equal("Marchbank, Imogen Rose", person.DisplayName);
     }
 }
+
+public sealed class PhoneFormatTests
+{
+    [Theory]
+    [InlineData("+14355550100", "(435) 555-0100")]
+    [InlineData("14355550100", "(435) 555-0100")]
+    [InlineData("4355550100", "(435) 555-0100")]
+    [InlineData("435-555-0100", "(435) 555-0100")]
+    [InlineData("(435) 555-0100", "(435) 555-0100")]
+    public void Numbers_are_shown_the_way_people_read_them(string stored, string shown)
+    {
+        Assert.Equal(shown, PhoneFormat.ForDisplay(stored));
+    }
+
+    [Theory]
+    [InlineData("", "")]
+    [InlineData(null, "")]
+    [InlineData("+447700900123", "+447700900123")]
+    [InlineData("call the house", "call the house")]
+    [InlineData("555-0100", "555-0100")]
+    public void Anything_else_is_left_exactly_as_it_is(string? stored, string shown)
+    {
+        Assert.Equal(shown, PhoneFormat.ForDisplay(stored));
+    }
+}

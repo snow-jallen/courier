@@ -46,6 +46,7 @@ public sealed class DirectoryService(CourierDbContext db)
             p.BirthMonth, p.BirthDay, p.PreferredChannel, email, phone, p.IsActive)
         {
             Address = address,
+            Notes = p.Notes,
         };
     }
 

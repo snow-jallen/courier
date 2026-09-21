@@ -47,12 +47,21 @@ public sealed record Recipient(
     string? Phone,
     bool IsActive)
 {
+    /// <summary>Whatever the user has written about this person. Theirs alone: never
+    /// sent anywhere, never offered to LCR.</summary>
+    public string? Notes { get; init; }
+
     /// <summary>Postal address as last known — from an edit if there has been one,
     /// otherwise from the export.</summary>
     public string? Address { get; init; }
 
     /// <summary>"Ashgrove, Adelaide", as LCR prints it and as the list is ordered.</summary>
     public string SortName => $"{LastName}, {FirstName}";
+
+    /// <summary>The phone as people read it, rather than as a service dials it.</summary>
+    public string PhoneForDisplay => PhoneFormat.ForDisplay(Phone);
+
+    public bool HasNote => !string.IsNullOrWhiteSpace(Notes);
 
     /// <summary>"Adelaide Ashgrove", for sentences written to the user.</summary>
     public string FullName =>

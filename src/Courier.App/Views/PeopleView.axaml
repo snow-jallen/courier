@@ -48,11 +48,15 @@
           <ItemsControl ItemsSource="{Binding Rows}">
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="vm:PersonRow">
-                <Border Classes="row">
+                <Border Classes="row" Background="Transparent" DoubleTapped="OnRowDoubleTapped">
                   <Grid ColumnDefinitions="2*,1.4*,2*,1.3*,0.5*,0.8*,Auto,Auto">
-                    <TextBlock Grid.Column="0" Text="{Binding Name}" FontWeight="SemiBold"
-                               Foreground="{DynamicResource Ink}" TextTrimming="CharacterEllipsis"
-                               VerticalAlignment="Center"/>
+                    <StackPanel Grid.Column="0" VerticalAlignment="Center" Spacing="1">
+                      <TextBlock Text="{Binding Name}" FontWeight="SemiBold"
+                                 Foreground="{DynamicResource Ink}" TextTrimming="CharacterEllipsis"/>
+                      <TextBlock Text="{Binding Note}" FontSize="11.5" FontStyle="Italic"
+                                 IsVisible="{Binding HasNote}" TextTrimming="CharacterEllipsis"
+                                 Foreground="{DynamicResource ChVoice}"/>
+                    </StackPanel>
                     <TextBlock Grid.Column="1" Text="{Binding Ward}" Foreground="{DynamicResource Ink3}"
                                FontSize="12.5" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
                     <TextBlock Grid.Column="2" Text="{Binding Email}" Classes="mono"
@@ -160,7 +164,7 @@
       <TextBlock Text="{Binding EditStatus}" FontSize="12" Margin="0,3,0,0" TextWrapping="Wrap"
                  Foreground="{DynamicResource Good}"/>
       <TextBlock Margin="0,3,0,0" FontSize="12" Foreground="{DynamicResource Ink3}" TextWrapping="Wrap"
-                 Text="Click the channel already chosen to clear it. People who have fallen out of the export are hidden here."/>
+                 Text="Double-click anyone to correct their details. Click the channel already chosen to clear it. People who have fallen out of the export are hidden here."/>
     </StackPanel>
   </Grid>
 </UserControl>

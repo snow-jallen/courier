@@ -178,7 +178,9 @@ public sealed class BroadcastServiceTests : IDisposable
 
     public void Dispose()
     {
-        Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
-        if (File.Exists(_path)) File.Delete(_path);
+        // Deliberately not ClearAllPools: it is process-wide, and clearing pools while
+        // another test class still holds a connection makes unrelated tests fail.
+        try { if (File.Exists(_path)) File.Delete(_path); }
+        catch (IOException) { /* a temp file left behind harms nothing */ }
     }
 }

@@ -80,9 +80,13 @@
                 <Border Classes="row">
                   <Grid ColumnDefinitions="36,2*,1.4*,0.5*,0.8*,Auto,2*">
                     <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected}" VerticalAlignment="Center"/>
-                    <TextBlock Grid.Column="1" Text="{Binding Name}" FontWeight="SemiBold"
-                               Foreground="{DynamicResource Ink}" VerticalAlignment="Center"
-                               TextTrimming="CharacterEllipsis"/>
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
+                      <TextBlock Text="{Binding Name}" FontWeight="SemiBold"
+                                 Foreground="{DynamicResource Ink}" TextTrimming="CharacterEllipsis"/>
+                      <TextBlock Text="{Binding Note}" FontSize="11.5" FontStyle="Italic"
+                                 IsVisible="{Binding HasNote}" TextTrimming="CharacterEllipsis"
+                                 Foreground="{DynamicResource ChVoice}"/>
+                    </StackPanel>
                     <TextBlock Grid.Column="2" Text="{Binding Ward}" FontSize="12.5"
                                Foreground="{DynamicResource Ink3}" VerticalAlignment="Center"
                                TextTrimming="CharacterEllipsis"/>

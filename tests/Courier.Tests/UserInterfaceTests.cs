@@ -350,9 +350,64 @@ public sealed class UserInterfaceTests : IDisposable
             await Task.CompletedTask;
         }, _folder);
 
+    [Fact]
+    public Task Numbers_and_notes_are_shown_the_way_people_read_them() =>
+        InWindow(async (_, model) =>
+        {
+            var services = AppServices.Start(Path.Combine(_folder, "contacts.db"));
+            var id = await SeedOneAsync(services);
+            await using (var db = services.Db())
+            {
+                await new Courier.Data.DirectoryService(db).UpdateDetailsAsync(
+                    id, null, null, null, "Hard of hearing — call the landline.", AppServices.Today);
+            }
+
+            await model.ShowPeopleAsync();
+            var row = Assert.Single(((PeopleViewModel)model.Current).Rows);
+
+            Assert.Equal("(435) 555-0111", row.Phone);
+            Assert.True(row.HasNote);
+            Assert.Equal("Hard of hearing — call the landline.", row.Note);
+
+            await model.ShowSendAsync();
+            var sendRow = Assert.Single(((SendViewModel)model.Current).Rows);
+            Assert.True(sendRow.HasNote);
+
+            await sendRow.ChooseTextCommand.ExecuteAsync(null);
+            Assert.Equal("(435) 555-0111", sendRow.GoesTo);
+
+            await sendRow.ChooseEmailCommand.ExecuteAsync(null);
+            Assert.Equal("a.ashgrove@example.com", sendRow.GoesTo);
+        }, _folder);
+
+    [Fact]
+    public Task Double_clicking_a_row_opens_the_edit_pane() =>
+        InWindow(async (window, model) =>
+        {
+            await SeedOneAsync(AppServices.Start(Path.Combine(_folder, "contacts.db")));
+            await model.ShowPeopleAsync();
+            var people = (PeopleViewModel)model.Current;
+            Resize(window, 1200, 800);
+
+            Assert.Null(people.Editing);
+
+            // The row's own Border carries the handler, so this is what a double-click
+            // on any part of the row reaches.
+            var row = window.GetVisualDescendants().OfType<Border>()
+                .First(b => b.Classes.Contains("row") && b.DataContext is PersonRow);
+            row.RaiseEvent(new Avalonia.Input.TappedEventArgs(
+                Avalonia.Input.InputElement.DoubleTappedEvent, null!));
+
+            var editor = Assert.IsType<PersonEditor>(people.Editing);
+            Assert.Equal("Ashgrove, Adelaide", editor.Name);
+
+            // And the editor shows the number in the readable form too.
+            Assert.Equal("(435) 555-0111", editor.Phone);
+        }, _folder);
+
     public void Dispose()
     {
-        Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
-        if (Directory.Exists(_folder)) Directory.Delete(_folder, recursive: true);
+        try { if (Directory.Exists(_folder)) Directory.Delete(_folder, recursive: true); }
+        catch (IOException) { /* a temp folder left behind harms nothing */ }
     }
 }
