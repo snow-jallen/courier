@@ -75,7 +75,7 @@ public sealed class UserInterfaceTests : IDisposable
         Assert.Contains(
             window.GetVisualDescendants().OfType<TextBlock>(),
             t => t.Text is not null
-              && t.Text.Contains("Organizations and Callings", StringComparison.Ordinal));
+              && t.Text.Contains("the ones already recorded are kept", StringComparison.Ordinal));
 
         return Task.CompletedTask;
     }, _folder);
