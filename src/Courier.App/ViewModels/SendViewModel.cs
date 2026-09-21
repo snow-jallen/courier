@@ -78,6 +78,9 @@ public sealed partial class SendViewModel(AppServices services, ISettingsStore s
 
     [ObservableProperty] private string _subject = "";
     [ObservableProperty] private string _body = "";
+    [ObservableProperty] private string _messagePreview = "";
+    [ObservableProperty] private string _lengthLine = "";
+    [ObservableProperty] private string _senderLine = "";
 
     [ObservableProperty] private string _matchLine = "";
     [ObservableProperty] private string _selectedLine = "";
@@ -106,6 +109,27 @@ public sealed partial class SendViewModel(AppServices services, ISettingsStore s
         _all = await new DirectoryService(db).RecipientsAsync();
         Loaded = true;
         Refresh();
+        RefreshMessage();
+    }
+
+    partial void OnBodyChanged(string value) => RefreshMessage();
+
+    /// <summary>The body as a recipient will read it: signed, once, here — so the
+    /// preview, the length shown and what actually leaves are the same string.</summary>
+    private string Signed => Signature.Compose(Body, store.Load().Sender);
+
+    private void RefreshMessage()
+    {
+        var sender = store.Load().Sender;
+        MessagePreview = Signed;
+        SenderLine = sender.IsComplete
+            ? $"Signed \u2014 {sender.Line}"
+            : "Nobody has said who these messages are from. Add your name and calling on the Setup screen.";
+
+        var segments = Signature.TextSegments(Signed);
+        LengthLine = segments <= 1
+            ? $"{Signed.Length} characters \u2014 fits in one text message."
+            : $"{Signed.Length} characters \u2014 sends as {segments} text segments, billed separately.";
     }
 
     partial void OnSearchChanged(string value) => Refresh();
@@ -250,7 +274,7 @@ public sealed partial class SendViewModel(AppServices services, ISettingsStore s
             var progress = new Progress<BroadcastProgress>(p =>
                 Status = $"Sending… {p.Done} of {p.Total} ({p.Who})");
 
-            var batch = await service.SendAsync(Subject, Body, Describe(chosen.Count), chosen, progress);
+            var batch = await service.SendAsync(Subject, Signed, Describe(chosen.Count), chosen, progress);
 
             var sent = await CountAsync(db, batch.Id, Entities.DeliveryStatus.Sent);
             var failed = await CountAsync(db, batch.Id, Entities.DeliveryStatus.Failed);

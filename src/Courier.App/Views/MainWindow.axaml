@@ -4,7 +4,7 @@
         xmlns:views="using:Courier.App.Views"
         x:Class="Courier.App.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
-        Title="Courier" Width="1100" Height="740" MinWidth="820" MinHeight="560"
+        Title="Courier" Width="1140" Height="740" MinWidth="820" MinHeight="560"
         Background="{DynamicResource Ground}">
 
   <Window.DataTemplates>
@@ -51,8 +51,9 @@
           <StackPanel VerticalAlignment="Center">
             <TextBlock Text="Courier" FontSize="16" FontWeight="SemiBold"
                        Foreground="{DynamicResource Ink}"/>
-            <TextBlock Text="MANTI UTAH STAKE" FontSize="9.5" LetterSpacing="0.8"
-                       FontWeight="SemiBold" Foreground="{DynamicResource Ink3}"/>
+            <TextBlock Text="{Binding SenderLabel}" FontSize="9" LetterSpacing="0.6"
+                       FontWeight="SemiBold" Foreground="{DynamicResource Ink3}"
+                       TextWrapping="Wrap" MaxWidth="150"/>
           </StackPanel>
         </StackPanel>
 

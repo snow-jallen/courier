@@ -1,3 +1,5 @@
+using Courier.Core.Domain;
+
 namespace Courier.Messaging.Settings;
 
 public sealed record EmailSettings
@@ -35,6 +37,10 @@ public sealed record TwilioSettings
 
 public sealed record CourierSettings
 {
+    /// <summary>Whose messages these are. Courier augments one person's calling rather
+    /// than speaking for the stake, so every message says who sent it.</summary>
+    public SenderIdentity Sender { get; init; } = SenderIdentity.Unknown;
+
     public EmailSettings Email { get; init; } = new();
     public TwilioSettings Twilio { get; init; } = new();
 

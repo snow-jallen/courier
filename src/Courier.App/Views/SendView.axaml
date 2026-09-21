@@ -129,9 +129,23 @@
         </StackPanel>
         <StackPanel Spacing="6">
           <TextBlock Classes="eyebrow" Text="MESSAGE"/>
-          <TextBox Text="{Binding Body}" AcceptsReturn="True" Height="130"
+          <TextBox Text="{Binding Body}" AcceptsReturn="True" Height="120"
                    TextWrapping="Wrap"
                    PlaceholderText="What you want everyone to know."/>
+          <TextBlock Text="{Binding SenderLine}" FontSize="12"
+                     Foreground="{DynamicResource Ink3}" TextWrapping="Wrap"/>
+          <TextBlock Text="{Binding LengthLine}" FontSize="12"
+                     Foreground="{DynamicResource Ink3}"/>
+          <Border Background="{DynamicResource Surface2}" CornerRadius="8" Padding="12,10"
+                  BorderBrush="{DynamicResource Line}" BorderThickness="1">
+            <StackPanel Spacing="5">
+              <TextBlock Classes="eyebrow" Text="WHAT EACH PERSON RECEIVES"/>
+              <TextBlock Text="{Binding MessagePreview}" TextWrapping="Wrap" FontSize="13.5"
+                         Foreground="{DynamicResource Ink}"/>
+              <TextBlock FontSize="11.5" Foreground="{DynamicResource Ink3}" TextWrapping="Wrap"
+                         Text="Sent to each person on their own — one message, one name in it. Nobody sees who else it went to."/>
+            </StackPanel>
+          </Border>
         </StackPanel>
         <StackPanel Orientation="Horizontal" Spacing="9">
           <Button Classes="primary" Content="{Binding SendLabel}"

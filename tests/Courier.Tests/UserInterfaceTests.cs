@@ -109,6 +109,36 @@ public sealed class UserInterfaceTests : IDisposable
             return Task.CompletedTask;
         }, _folder);
 
+    [Fact]
+    public Task The_rail_names_the_person_not_the_stake() => InWindow((_, model) =>
+    {
+        // Nothing filled in yet, so it asks rather than inventing an organisation.
+        Assert.Equal("SET UP WHO THIS IS FROM", model.SenderLabel);
+        return Task.CompletedTask;
+    }, _folder);
+
+    [Fact]
+    public Task A_message_is_signed_with_the_name_and_calling_from_setup() =>
+        InWindow(async (_, model) =>
+        {
+            var store = new SettingsStore(Path.Combine(_folder, "settings.json"));
+            store.Save(store.Load() with
+            {
+                Sender = new Courier.Core.Domain.SenderIdentity("Jonathan Allen", "Stake Singles Representative"),
+            });
+
+            await model.ShowSendAsync();
+            var send = (SendViewModel)model.Current;
+            send.Body = "Dinner is Friday at 6:30.";
+
+            Assert.Equal("Dinner is Friday at 6:30.\n\u2014 Jonathan Allen, Stake Singles Representative",
+                send.MessagePreview);
+            Assert.Contains("one text message", send.LengthLine, StringComparison.Ordinal);
+
+            model.ShowImport();
+            Assert.Equal("JONATHAN ALLEN, STAKE SINGLES REPRESENTATIVE", model.SenderLabel);
+        }, _folder);
+
     public void Dispose()
     {
         Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();

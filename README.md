@@ -47,6 +47,52 @@ than the user. If you drop a genuine export at
 tests run against it and check that every one of the 427 people — the number the report prints in its own
 footer — comes back with a readable phone, e-mail, age, birthday and ward.
 
+## Sending as yourself
+
+Courier is one person's tool. It is not an official church system and should not look
+like one: every message is sent to **one person at a time**, addressed only to them, and
+signed with your name and your calling, which you set on the Setup screen.
+
+    Dinner is Friday at 6:30 at the stake center.
+    — Jonathan Allen, Stake Singles Representative
+
+Nobody ever sees who else a message went to — not because recipients are hidden, but
+because each message really is its own message.
+
+### Can the texts come from your own number?
+
+**Calls: yes.** Verify your mobile in the Twilio console as a caller ID and outgoing
+calls show *your* number. People see you ringing, and returning the call reaches you
+directly.
+
+**Texts: no, and no service will let you.** Sending a text that appears to come from a
+number you have not proven you control is spoofing; carriers block it and Twilio
+forbids it. Hosting your own mobile number on Twilio is the supported way to send from
+it, but it does not apply here twice over: ordinary mobile numbers from the big US
+carriers generally cannot be hosted, and if yours could, Twilio would then receive your
+personal texts instead of your phone.
+
+What to do instead, which gets most of the way there:
+
+1. **Buy a Twilio number in your own area code** so it reads as local rather than
+   out-of-state.
+2. **Forward its replies to your phone.** In the Twilio console, point the number's
+   incoming-message webhook at a TwiML Bin containing
+   `<Response><Message to="+1435...">{{From}}: {{Body}}</Message></Response>`. Replies
+   then arrive in your normal Messages app with the sender's number in front of them. No
+   server, no code.
+3. **Let the signature do the recognising.** People do not recognise numbers; they
+   recognise names. That is what the signature is for.
+
+### Before the first real broadcast
+
+Texting a list from a US long code requires **A2P 10DLC registration** — a one-off form
+in the Twilio console and about $2 a month. Registered as a sole proprietor you get one
+number and one campaign, roughly one message per second and a few thousand segments a
+day. Sending to 427 people is comfortably inside that, and takes about seven minutes.
+
+Unregistered traffic is filtered by the carriers, so this is not optional.
+
 ## Checking it is wired up without messaging anyone
 
 **Twilio publishes test credentials.** In the Twilio console, under Account → API keys

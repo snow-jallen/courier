@@ -4,6 +4,7 @@ using Courier.Messaging;
 using Courier.Messaging.Email;
 using Courier.Messaging.Settings;
 using Courier.Messaging.Twilio;
+using Courier.Core.Domain;
 using Courier.Data;
 
 namespace Courier.App.ViewModels;
@@ -19,6 +20,8 @@ public sealed partial class SetupViewModel : ObservableObject
         _store = store;
 
         var settings = store.Load();
+        _senderName = settings.Sender.Name;
+        _senderCalling = settings.Sender.Calling;
         _emailAddress = settings.Email.Address;
         _appPassword = settings.Email.AppPassword;
         _displayName = settings.Email.DisplayName;
@@ -35,6 +38,18 @@ public sealed partial class SetupViewModel : ObservableObject
     [ObservableProperty] private string _databasePath;
     [ObservableProperty] private string _settingsPath;
     [ObservableProperty] private string _backupStatus = "";
+
+    // --- who the messages are from ------------------------------------------------
+    [ObservableProperty] private string _senderName;
+    [ObservableProperty] private string _senderCalling;
+
+    public string SignaturePreview =>
+        new SenderIdentity(SenderName, SenderCalling) is { IsComplete: true } sender
+            ? $"\u2014 {sender.Line}"
+            : "Nobody has said who these messages are from yet.";
+
+    partial void OnSenderNameChanged(string value) => OnPropertyChanged(nameof(SignaturePreview));
+    partial void OnSenderCallingChanged(string value) => OnPropertyChanged(nameof(SignaturePreview));
 
     // --- email -------------------------------------------------------------------
     [ObservableProperty] private string _emailAddress;
@@ -58,11 +73,15 @@ public sealed partial class SetupViewModel : ObservableObject
 
     private CourierSettings Current => new()
     {
+        Sender = new SenderIdentity(SenderName.Trim(), SenderCalling.Trim()),
         Email = new EmailSettings
         {
             Address = EmailAddress.Trim(),
             AppPassword = AppPassword.Trim(),
-            DisplayName = DisplayName.Trim(),
+
+            // What a recipient sees in their inbox. Falling back to the sender's own
+            // name keeps mail consistent with the way texts are signed.
+            DisplayName = DisplayName.Trim().Length > 0 ? DisplayName.Trim() : SenderName.Trim(),
         },
         Twilio = new TwilioSettings
         {

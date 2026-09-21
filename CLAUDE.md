@@ -49,6 +49,12 @@ Pure logic lives in `Core` with tests. Views do not compute.
 
 ## Sending
 
+- **Courier augments one person's calling. It is not an official church system and must
+  not look like one.** The rail names the person, not the stake. Every message goes to
+  one recipient on its own and is signed with that person's name and calling — a text
+  from an unrecognised number gets ignored or reported; a signed one gets answered.
+  Signature composition lives in `Core/Domain/Signature.cs` so the preview, the length
+  shown and what actually leaves are the same string.
 - A provider's error code must never reach the screen. Translate it into what happened
   and what to do. Tests assert the codes are absent; keep them.
 - Reachability carries a reason. Nobody is dropped from a send silently.
