@@ -11,13 +11,17 @@ namespace Courier.App.ViewModels;
 public sealed partial class PersonRow : ObservableObject
 {
     private readonly Func<Guid, Channel, Task> _choose;
+    private readonly Action<PersonRow> _edit;
 
-    public PersonRow(Recipient person, Func<Guid, Channel, Task> choose)
+    public PersonRow(Recipient person, Func<Guid, Channel, Task> choose, Action<PersonRow> edit)
     {
         Person = person;
         _choose = choose;
+        _edit = edit;
         _channel = person.PreferredChannel;
     }
+
+    [RelayCommand] private void Edit() => _edit(this);
 
     public Recipient Person { get; }
     public Guid Id => Person.Id;
@@ -58,6 +62,35 @@ public sealed partial class PersonRow : ObservableObject
         ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 }
 
+/// <summary>Correcting what Courier holds for one person. Saving does not overwrite
+/// what the export said — it records the correction, which is what puts it on the
+/// "to enter in LCR" list and what keeps it through the next import.</summary>
+public sealed partial class PersonEditor(Recipient person, Func<PersonEditor, Task> save, Action close)
+    : ObservableObject
+{
+    public Guid Id { get; } = person.Id;
+    public string Name { get; } = person.SortName;
+    public string Ward { get; } = person.Ward ?? "no ward";
+
+    [ObservableProperty] private string _email = person.Email ?? "";
+    [ObservableProperty] private string _phone = person.Phone ?? "";
+    [ObservableProperty] private string _address = person.Address ?? "";
+    [ObservableProperty] private string _notes = "";
+    [ObservableProperty] private string _status = "";
+    [ObservableProperty] private bool _busy;
+
+    [RelayCommand]
+    private async Task Save()
+    {
+        Busy = true;
+        try { await save(this); }
+        catch (Exception e) { Status = $"Not saved. {e.Message}"; }
+        finally { Busy = false; }
+    }
+
+    [RelayCommand] private void Cancel() => close();
+}
+
 public sealed partial class PeopleViewModel(AppServices services) : ObservableObject
 {
     private IReadOnlyList<Recipient> _all = [];
@@ -67,6 +100,12 @@ public sealed partial class PeopleViewModel(AppServices services) : ObservableOb
     [ObservableProperty] private string _ward = AllWards;
     [ObservableProperty] private string _summary = "";
     [ObservableProperty] private bool _loaded;
+    [ObservableProperty] private PersonEditor? _editing;
+    [ObservableProperty] private string _editStatus = "";
+
+    public bool IsEditing => Editing is not null;
+
+    partial void OnEditingChanged(PersonEditor? value) => OnPropertyChanged(nameof(IsEditing));
 
     public const string AllWards = "All wards";
 
@@ -112,12 +151,38 @@ public sealed partial class PeopleViewModel(AppServices services) : ObservableOb
 
         var shown = Audience.Select(_all, filter, _sort);
         Rows.Clear();
-        foreach (var person in shown) Rows.Add(new PersonRow(person, SaveChannelAsync));
+        foreach (var person in shown) Rows.Add(new PersonRow(person, SaveChannelAsync, StartEditing));
 
         var active = _all.Count(p => p.IsActive);
         Summary = shown.Count == active
             ? $"{active} people"
             : $"{shown.Count} of {active} people";
+    }
+
+    private void StartEditing(PersonRow row)
+    {
+        EditStatus = "";
+        Editing = new PersonEditor(row.Person, SaveDetailsAsync, () => Editing = null);
+    }
+
+    private async Task SaveDetailsAsync(PersonEditor editor)
+    {
+        int added;
+        await using (var db = services.Db())
+        {
+            added = await new DirectoryService(db).UpdateDetailsAsync(
+                editor.Id, editor.Email, editor.Phone, editor.Address, editor.Notes, AppServices.Today);
+        }
+
+        EditStatus = added switch
+        {
+            0 => $"Saved. Nothing new for LCR — {editor.Name} already matched.",
+            1 => $"Saved. One detail for {editor.Name} is now waiting to be entered in LCR.",
+            _ => $"Saved. {added} details for {editor.Name} are now waiting to be entered in LCR.",
+        };
+
+        Editing = null;
+        await LoadAsync();
     }
 
     private async Task SaveChannelAsync(Guid personId, Channel channel)

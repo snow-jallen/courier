@@ -38,7 +38,9 @@ public static class Audience
         return [.. ordered, .. unknown];
     }
 
-    public static AudienceSummary Summarise(IEnumerable<Recipient> chosen)
+    /// <summary>What sending to these people would do. <paramref name="via"/> overrides
+    /// everyone's preference for this one send; null honours what each person chose.</summary>
+    public static AudienceSummary Summarise(IEnumerable<Recipient> chosen, Channel? via = null)
     {
         var reachable = new List<Recipient>();
         var unreachable = new List<(Recipient, Reachability)>();
@@ -46,7 +48,7 @@ public static class Audience
 
         foreach (var person in chosen)
         {
-            var reach = person.Reachability;
+            var reach = via is { } channel ? person.ReachabilityVia(channel) : person.Reachability;
             if (!reach.CanReceive) { unreachable.Add((person, reach)); continue; }
             reachable.Add(person);
             byChannel[reach.Channel] = byChannel.GetValueOrDefault(reach.Channel) + 1;

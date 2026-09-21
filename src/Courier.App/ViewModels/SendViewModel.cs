@@ -6,14 +6,26 @@ using Courier.Data;
 using Courier.Messaging;
 using Courier.Messaging.Email;
 using Courier.Messaging.Settings;
+using Courier.Messaging.Mac;
 using Courier.Messaging.Twilio;
 using Entities = Courier.Data.Entities;
 
 namespace Courier.App.ViewModels;
 
-public sealed partial class SendRow(Recipient person, Action<Guid, bool> pick) : ObservableObject
+public sealed partial class SendRow : ObservableObject
 {
-    public Recipient Person { get; } = person;
+    private readonly Action<Guid, bool> _pick;
+    private readonly Func<Guid, Channel, Task> _choose;
+
+    public SendRow(Recipient person, Action<Guid, bool> pick, Func<Guid, Channel, Task> choose)
+    {
+        Person = person;
+        _pick = pick;
+        _choose = choose;
+        _channel = person.PreferredChannel;
+    }
+
+    public Recipient Person { get; }
     public Guid Id => Person.Id;
     public string Name => Person.SortName;
     public string Ward => Person.Ward ?? "—";
@@ -21,26 +33,40 @@ public sealed partial class SendRow(Recipient person, Action<Guid, bool> pick) :
     public string Birthday => Person.BirthMonth is int m && Person.BirthDay is int d
         ? $"{d} {Months[m - 1]}" : "—";
 
-    public string ChannelLabel => Person.PreferredChannel switch
+    /// <summary>Editable here as well as on the People screen: deciding how to reach
+    /// somebody usually occurs to you while looking at who is about to be sent to.</summary>
+    [ObservableProperty] private Channel _channel;
+
+    public bool IsEmail => Channel == Channel.Email;
+    public bool IsText => Channel == Channel.Text;
+    public bool IsVoice => Channel == Channel.Voice;
+    public bool NoChannel => Channel == Channel.None;
+
+    [RelayCommand] private Task ChooseEmail() => Set(Channel.Email);
+    [RelayCommand] private Task ChooseText() => Set(Channel.Text);
+    [RelayCommand] private Task ChooseVoice() => Set(Channel.Voice);
+
+    private async Task Set(Channel channel)
     {
-        Channel.Email => "Email",
-        Channel.Text => "Text",
-        Channel.Voice => "Voice",
-        _ => "Not set",
-    };
+        Channel = Channel == channel ? Channel.None : channel;
+        await _choose(Person.Id, Channel);
+    }
 
-    public bool IsEmail => Person.PreferredChannel == Channel.Email;
-    public bool IsText => Person.PreferredChannel == Channel.Text;
-    public bool IsVoice => Person.PreferredChannel == Channel.Voice;
-    public bool NoChannel => Person.PreferredChannel == Channel.None;
+    partial void OnChannelChanged(Channel value)
+    {
+        foreach (var name in (string[])["IsEmail", "IsText", "IsVoice", "NoChannel", "CanReceive", "GoesTo"])
+            OnPropertyChanged(name);
+    }
 
-    public bool CanReceive => Person.CanReceive;
-    public string GoesTo => Person.Reachability.Address ?? Problem;
+    private Recipient AsChosen => Person with { PreferredChannel = Channel };
 
-    private string Problem => Person.Reachability.Reason switch
+    public bool CanReceive => AsChosen.CanReceive;
+    public string GoesTo => AsChosen.Reachability.Address ?? Problem;
+
+    private string Problem => AsChosen.Reachability.Reason switch
     {
         UnreachableReason.NoChannelChosen => "no channel chosen",
-        UnreachableReason.MissingAddress => Person.PreferredChannel == Channel.Email
+        UnreachableReason.MissingAddress => Channel == Channel.Email
             ? "no email address" : "no phone number",
         UnreachableReason.ChannelNotSupported => "channel not supported yet",
         UnreachableReason.NotInDirectory => "no longer in the directory",
@@ -49,7 +75,7 @@ public sealed partial class SendRow(Recipient person, Action<Guid, bool> pick) :
 
     [ObservableProperty] private bool _isSelected = true;
 
-    partial void OnIsSelectedChanged(bool value) => pick(Id, value);
+    partial void OnIsSelectedChanged(bool value) => _pick(Id, value);
 
     private static readonly string[] Months =
         ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -68,6 +94,7 @@ public sealed partial class SendViewModel(AppServices services, ISettingsStore s
     public const string AnyChannel = "Any channel";
     public const string NoChannelChosen = "No channel chosen";
     public const string AnyMonth = "Any birthday";
+    public const string EachPersonsChoice = "However each person prefers";
 
     [ObservableProperty] private string _search = "";
     [ObservableProperty] private string _ward = AllWards;
@@ -75,6 +102,10 @@ public sealed partial class SendViewModel(AppServices services, ISettingsStore s
     [ObservableProperty] private string _birthdayMonth = AnyMonth;
     [ObservableProperty] private string _minAge = "";
     [ObservableProperty] private string _maxAge = "";
+
+    /// <summary>Overrides everyone's preference for this one send — for something
+    /// urgent enough to text the people who would normally be e-mailed.</summary>
+    [ObservableProperty] private string _sendVia = EachPersonsChoice;
 
     [ObservableProperty] private string _subject = "";
     [ObservableProperty] private string _body = "";
@@ -100,6 +131,9 @@ public sealed partial class SendViewModel(AppServices services, ISettingsStore s
     public IReadOnlyList<string> WardOptions { get; } = [AllWards, .. Wards.All];
     public IReadOnlyList<string> ChannelOptions { get; } =
         [AnyChannel, "Email", "Text", "Voice", NoChannelChosen];
+    public IReadOnlyList<string> SendViaOptions { get; } =
+        [EachPersonsChoice, "Everyone by email", "Everyone by text", "Everyone by voice"];
+
     public IReadOnlyList<string> MonthOptions { get; } =
         [AnyMonth, "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -113,6 +147,16 @@ public sealed partial class SendViewModel(AppServices services, ISettingsStore s
     }
 
     partial void OnBodyChanged(string value) => RefreshMessage();
+
+    partial void OnSendViaChanged(string value) => Summarise();
+
+    private Core.Domain.Channel? Override => SendVia switch
+    {
+        "Everyone by email" => Core.Domain.Channel.Email,
+        "Everyone by text" => Core.Domain.Channel.Text,
+        "Everyone by voice" => Core.Domain.Channel.Voice,
+        _ => null,
+    };
 
     /// <summary>The body as a recipient will read it: signed, once, here — so the
     /// preview, the length shown and what actually leaves are the same string.</summary>
@@ -210,7 +254,7 @@ public sealed partial class SendViewModel(AppServices services, ISettingsStore s
         var matching = Audience.Select(_all, Filter(), _sort);
         Rows.Clear();
         foreach (var person in matching)
-            Rows.Add(new SendRow(person, Pick) { IsSelected = !_deselected.Contains(person.Id) });
+            Rows.Add(new SendRow(person, Pick, SaveChannelAsync) { IsSelected = !_deselected.Contains(person.Id) });
 
         MatchLine = $"{matching.Count} of {_all.Count(p => p.IsActive)} people match these filters.";
         Summarise();
@@ -222,12 +266,22 @@ public sealed partial class SendViewModel(AppServices services, ISettingsStore s
         Summarise();
     }
 
+    /// <summary>The people ticked, carrying any channel changed on this screen so the
+    /// summary and the send agree.</summary>
     private IReadOnlyList<Recipient> Chosen =>
-        [.. Rows.Where(r => r.IsSelected).Select(r => r.Person)];
+        [.. Rows.Where(r => r.IsSelected).Select(r => r.Person with { PreferredChannel = r.Channel })];
+
+    private async Task SaveChannelAsync(Guid personId, Core.Domain.Channel channel)
+    {
+        await using var db = services.Db();
+        await new DirectoryService(db).SetPreferredChannelAsync(personId, channel);
+        _all = [.. _all.Select(p => p.Id == personId ? p with { PreferredChannel = channel } : p)];
+        Summarise();
+    }
 
     private void Summarise()
     {
-        var summary = Audience.Summarise(Chosen);
+        var summary = Audience.Summarise(Chosen, Override);
 
         EmailCount = summary.Count(Core.Domain.Channel.Email);
         TextCount = summary.Count(Core.Domain.Channel.Text);
@@ -265,7 +319,9 @@ public sealed partial class SendViewModel(AppServices services, ISettingsStore s
             var senders = new Dictionary<Core.Domain.Channel, IMessageSender>
             {
                 [Core.Domain.Channel.Email] = new EmailSender(new SmtpTransport(), settings.Email),
-                [Core.Domain.Channel.Text] = new TextSender(new TwilioGateway(settings.Twilio), settings.Twilio),
+                [Core.Domain.Channel.Text] = settings.TextVia == TextTransport.MacMessages
+                    ? new MessagesTextSender(new AppleScriptRunner())
+                    : new TextSender(new TwilioGateway(settings.Twilio), settings.Twilio),
                 [Core.Domain.Channel.Voice] = new VoiceSender(new TwilioGateway(settings.Twilio), settings.Twilio),
             };
 
@@ -274,7 +330,7 @@ public sealed partial class SendViewModel(AppServices services, ISettingsStore s
             var progress = new Progress<BroadcastProgress>(p =>
                 Status = $"Sending… {p.Done} of {p.Total} ({p.Who})");
 
-            var batch = await service.SendAsync(Subject, Signed, Describe(chosen.Count), chosen, progress);
+            var batch = await service.SendAsync(Subject, Signed, Describe(chosen.Count), chosen, progress, Override);
 
             var sent = await CountAsync(db, batch.Id, Entities.DeliveryStatus.Sent);
             var failed = await CountAsync(db, batch.Id, Entities.DeliveryStatus.Failed);

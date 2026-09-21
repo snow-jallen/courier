@@ -76,6 +76,25 @@ public sealed class BroadcastServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task An_override_sends_everyone_the_same_way_whatever_they_chose()
+    {
+        using var db = Open();
+        var email = new FakeSender(Channel.Email);
+        var text = new FakeSender(Channel.Text);
+        var service = new BroadcastService(db,
+            new Dictionary<Channel, IMessageSender> { [Channel.Email] = email, [Channel.Text] = text });
+
+        await service.SendAsync("Urgent", "Moved to Thursday", "Everyone, all by text (2)",
+            [await PersonAsync(db, "Mail", Channel.Email), await PersonAsync(db, "None", Channel.None)],
+            via: Channel.Text);
+
+        Assert.Empty(email.SentTo);
+        Assert.Equal(2, text.SentTo.Count);
+        Assert.All(await db.MessageDeliveries.ToListAsync(),
+            d => Assert.Equal(Channel.Text, d.Channel));
+    }
+
+    [Fact]
     public async Task Someone_unreachable_is_recorded_as_skipped_with_the_reason()
     {
         using var db = Open();
@@ -122,7 +141,7 @@ public sealed class BroadcastServiceTests : IDisposable
         var progress = new Progress<BroadcastProgress>(p => { if (p.Done == 2) stop.Cancel(); });
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(
-            () => service.SendAsync("Dinner", "Friday", "Everyone (3)", people, progress, stop.Token));
+            () => service.SendAsync("Dinner", "Friday", "Everyone (3)", people, progress, null, stop.Token));
 
         // Two were really sent, and the record says so. Pretending otherwise would have
         // the user send to them twice.

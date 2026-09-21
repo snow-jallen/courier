@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Courier.Core.Domain;
 
 namespace Courier.Messaging.Settings;
@@ -48,8 +49,24 @@ public sealed record TwilioSettings
         && (FromNumber.Length > 0 || MessagingServiceSid.Length > 0);
 }
 
+/// <summary>Where texts actually leave from.</summary>
+[JsonConverter(typeof(JsonStringEnumConverter<TextTransport>))]
+public enum TextTransport
+{
+    /// <summary>A messaging service. Reaches everybody, costs money, and arrives from a
+    /// number nobody recognises.</summary>
+    Twilio = 1,
+
+    /// <summary>The Messages app on this Mac, which sends over the user's own line —
+    /// their real number, replies in their own Messages app. Meant for a ward or a
+    /// committee rather than the whole directory.</summary>
+    MacMessages = 2,
+}
+
 public sealed record CourierSettings
 {
+    public TextTransport TextVia { get; init; } = TextTransport.Twilio;
+
     /// <summary>Whose messages these are. Courier augments one person's calling rather
     /// than speaking for the stake, so every message says who sent it.</summary>
     public SenderIdentity Sender { get; init; } = SenderIdentity.Unknown;

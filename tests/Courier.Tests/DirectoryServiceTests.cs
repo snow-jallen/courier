@@ -18,9 +18,15 @@ public sealed class DirectoryServiceTests : IDisposable
         return db;
     }
 
+    /// <summary>Imports the way the app does — against whoever is already stored — so
+    /// importing twice updates people rather than duplicating them.</summary>
     private static async Task SeedAsync(CourierDbContext db, params NormalizedPerson[] people)
     {
-        var plan = ImportPlanner.Plan(people, []);
+        var existing = await db.People
+            .Select(p => new ExistingPerson(p.Id, p.LastName, p.FirstName, p.BirthMonth, p.BirthDay,
+                p.Ward, p.Age, p.Address, p.LcrEmail, p.LcrPhone, p.IsActive))
+            .ToListAsync();
+        var plan = ImportPlanner.Plan(people, existing);
         await new ImportService(db).ApplyAsync(
             new LcrReport([], 1, "seed.pdf", new string('a', 64)), plan, Today);
     }
@@ -129,6 +135,109 @@ public sealed class DirectoryServiceTests : IDisposable
         await service.AddContactAsync(rulon.Id, ContactKind.Email, "rulon@example.com", "rulon@example.com", Today);
         await service.AddContactAsync(rulon.Id, ContactKind.Email, "RULON@example.com", "rulon@example.com", Today);
 
+        Assert.Single(await service.PendingLcrEntriesAsync());
+    }
+
+    // ---- editing a person, which is what feeds the "to enter in LCR" list ----------
+
+    [Fact]
+    public async Task Correcting_an_email_puts_it_on_the_lcr_list_and_starts_using_it()
+    {
+        using var db = Open();
+        await SeedAsync(db, Person("Ashgrove", "Adelaide", "old@example.com", "555-0111"));
+        var service = new DirectoryService(db);
+        var person = (await service.RecipientsAsync()).Single();
+
+        await service.UpdateDetailsAsync(person.Id, "new@example.com", null, null, null, Today);
+
+        Assert.Equal("new@example.com", (await service.RecipientsAsync()).Single().Email);
+        var pending = Assert.Single(await service.PendingLcrEntriesAsync());
+        Assert.Equal("new@example.com", pending.Value);
+        Assert.Equal("Email", pending.KindLabel);
+    }
+
+    [Fact]
+    public async Task A_corrected_address_is_something_to_enter_in_lcr_too()
+    {
+        using var db = Open();
+        await SeedAsync(db, Person("Quilley", "Barnaby", phone: "555-0127"));
+        var service = new DirectoryService(db);
+        var person = (await service.RecipientsAsync()).Single();
+
+        await service.UpdateDetailsAsync(person.Id, null, null, "42 New Street", null, Today);
+
+        var pending = Assert.Single(await service.PendingLcrEntriesAsync());
+        Assert.Equal("Address", pending.KindLabel);
+        Assert.Equal("42 New Street", (await service.RecipientsAsync()).Single().Address);
+    }
+
+    [Fact]
+    public async Task A_phone_typed_the_way_people_write_it_is_stored_ready_to_dial()
+    {
+        using var db = Open();
+        await SeedAsync(db, Person("Quilley", "Barnaby"));
+        var service = new DirectoryService(db);
+        var person = (await service.RecipientsAsync()).Single();
+
+        await service.UpdateDetailsAsync(person.Id, null, "(435) 555-0199", null, null, Today);
+
+        Assert.Equal("+14355550199", (await service.RecipientsAsync()).Single().Phone);
+    }
+
+    [Fact]
+    public async Task Saving_the_same_details_twice_adds_nothing_the_second_time()
+    {
+        using var db = Open();
+        await SeedAsync(db, Person("Quilley", "Barnaby", phone: "555-0127"));
+        var service = new DirectoryService(db);
+        var person = (await service.RecipientsAsync()).Single();
+
+        Assert.Equal(1, await service.UpdateDetailsAsync(person.Id, "b@example.com", null, null, null, Today));
+        Assert.Equal(0, await service.UpdateDetailsAsync(person.Id, "b@example.com", null, null, null, Today));
+
+        Assert.Single(await service.PendingLcrEntriesAsync());
+    }
+
+    [Fact]
+    public async Task Retyping_what_lcr_already_has_is_not_a_correction()
+    {
+        using var db = Open();
+        await SeedAsync(db, Person("Ashgrove", "Adelaide", "known@example.com", "555-0111"));
+        var service = new DirectoryService(db);
+        var person = (await service.RecipientsAsync()).Single();
+
+        Assert.Equal(0, await service.UpdateDetailsAsync(person.Id, "known@example.com", null, null, null, Today));
+        Assert.Empty(await service.PendingLcrEntriesAsync());
+    }
+
+    [Fact]
+    public async Task A_note_is_for_the_user_alone_and_never_goes_on_the_lcr_list()
+    {
+        using var db = Open();
+        await SeedAsync(db, Person("Quilley", "Barnaby", phone: "555-0127"));
+        var service = new DirectoryService(db);
+        var person = (await service.RecipientsAsync()).Single();
+
+        await service.UpdateDetailsAsync(person.Id, null, null, null, "Hard of hearing — call the landline.", Today);
+
+        Assert.Empty(await service.PendingLcrEntriesAsync());
+        Assert.Equal("Hard of hearing — call the landline.",
+            (await db.People.FirstAsync()).Notes);
+    }
+
+    [Fact]
+    public async Task An_edit_survives_the_next_import()
+    {
+        using var db = Open();
+        await SeedAsync(db, Person("Ashgrove", "Adelaide", "lcr@example.com", "555-0111"));
+        var service = new DirectoryService(db);
+        var person = (await service.RecipientsAsync()).Single();
+        await service.UpdateDetailsAsync(person.Id, "better@example.com", null, null, null, Today);
+
+        // The same export again, still carrying the old address.
+        await SeedAsync(db, Person("Ashgrove", "Adelaide", "lcr@example.com", "555-0111"));
+
+        Assert.Equal("better@example.com", (await service.RecipientsAsync()).Single().Email);
         Assert.Single(await service.PendingLcrEntriesAsync());
     }
 

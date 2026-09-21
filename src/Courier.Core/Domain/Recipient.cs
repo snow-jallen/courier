@@ -47,6 +47,10 @@ public sealed record Recipient(
     string? Phone,
     bool IsActive)
 {
+    /// <summary>Postal address as last known — from an edit if there has been one,
+    /// otherwise from the export.</summary>
+    public string? Address { get; init; }
+
     /// <summary>"Ashgrove, Adelaide", as LCR prints it and as the list is ordered.</summary>
     public string SortName => $"{LastName}, {FirstName}";
 
@@ -66,24 +70,28 @@ public sealed record Recipient(
     };
 
     /// <summary>What sending to this person would do, worked out before the Send
-    /// button is pressed. Being out of the directory is checked first: the address
-    /// may be perfectly good, and that is the case most easily sent by mistake.</summary>
-    public Reachability Reachability
-    {
-        get
-        {
-            if (!IsActive)
-                return new Reachability(PreferredChannel, null, UnreachableReason.NotInDirectory);
-            if (PreferredChannel is Channel.None)
-                return new Reachability(Channel.None, null, UnreachableReason.NoChannelChosen);
-            if (!Channels.Deliverable.Contains(PreferredChannel))
-                return new Reachability(PreferredChannel, null, UnreachableReason.ChannelNotSupported);
+    /// button is pressed.</summary>
+    public Reachability Reachability => ReachabilityVia(PreferredChannel);
 
-            var address = AddressFor(PreferredChannel);
-            return address is null
-                ? new Reachability(PreferredChannel, null, UnreachableReason.MissingAddress)
-                : new Reachability(PreferredChannel, address, UnreachableReason.None);
-        }
+    /// <summary>The same question for a channel other than the one this person chose —
+    /// used when a send overrides everyone's preference, for instance because something
+    /// is urgent enough to text the people who would normally be e-mailed.
+    ///
+    /// Being out of the directory is checked first: the address may be perfectly good,
+    /// and that is the case most easily sent to by mistake.</summary>
+    public Reachability ReachabilityVia(Channel channel)
+    {
+        if (!IsActive)
+            return new Reachability(channel, null, UnreachableReason.NotInDirectory);
+        if (channel is Channel.None)
+            return new Reachability(Channel.None, null, UnreachableReason.NoChannelChosen);
+        if (!Channels.Deliverable.Contains(channel))
+            return new Reachability(channel, null, UnreachableReason.ChannelNotSupported);
+
+        var address = AddressFor(channel);
+        return address is null
+            ? new Reachability(channel, null, UnreachableReason.MissingAddress)
+            : new Reachability(channel, address, UnreachableReason.None);
     }
 
     public bool CanReceive => Reachability.CanReceive;

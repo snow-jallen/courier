@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using Courier.Messaging;
 using Courier.Messaging.Email;
 using Courier.Messaging.Settings;
+using Courier.Messaging.Mac;
 using Courier.Messaging.Twilio;
 using Courier.Core.Domain;
 using Courier.Data;
@@ -30,6 +31,7 @@ public sealed partial class SetupViewModel : ObservableObject
         _fromNumber = settings.Twilio.FromNumber;
         _testNumber = settings.Twilio.TestNumber;
         _messagingServiceSid = settings.Twilio.MessagingServiceSid;
+        _useMacMessages = settings.TextVia == TextTransport.MacMessages;
         _recordingUrl = settings.Twilio.VoiceRecordingUrl;
         _databasePath = services.DatabasePath;
         _settingsPath = store.Path;
@@ -69,6 +71,15 @@ public sealed partial class SetupViewModel : ObservableObject
 
     public bool SendsRichText => MessagingServiceSid.Trim().Length > 0;
 
+    /// <summary>Texting through the Messages app on this Mac instead of a service, so
+    /// messages come from the user's own number and replies land in their own app.</summary>
+    [ObservableProperty] private bool _useMacMessages;
+
+    public bool UseTwilioForText => !UseMacMessages;
+    public bool MacMessagesAvailable => OperatingSystem.IsMacOS();
+
+    partial void OnUseMacMessagesChanged(bool value) => OnPropertyChanged(nameof(UseTwilioForText));
+
     partial void OnMessagingServiceSidChanged(string value) => OnPropertyChanged(nameof(SendsRichText));
     [ObservableProperty] private string _recordingUrl;
     [ObservableProperty] private string _twilioStatus = "";
@@ -79,6 +90,7 @@ public sealed partial class SetupViewModel : ObservableObject
 
     private CourierSettings Current => new()
     {
+        TextVia = UseMacMessages ? TextTransport.MacMessages : TextTransport.Twilio,
         Sender = new SenderIdentity(SenderName.Trim(), SenderCalling.Trim()),
         Email = new EmailSettings
         {
@@ -132,8 +144,10 @@ public sealed partial class SetupViewModel : ObservableObject
         try
         {
             _store.Save(Current);
-            var sender = new TextSender(new TwilioGateway(Current.Twilio), Current.Twilio);
-            var check = await sender.TestAsync("");
+            IMessageSender sender = UseMacMessages
+                ? new MessagesTextSender(new AppleScriptRunner())
+                : new TextSender(new TwilioGateway(Current.Twilio), Current.Twilio);
+            var check = await sender.TestAsync(UseMacMessages ? TestNumber.Trim() : "");
             TwilioOk = check.Ok;
             TwilioStatus = check.Message;
         }
