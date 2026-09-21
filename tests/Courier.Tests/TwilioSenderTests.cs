@@ -10,14 +10,15 @@ public sealed class TwilioSenderTests
 {
     private sealed class FakeTwilio(Exception? throws = null) : ITwilioGateway
     {
-        public List<(string From, string To, string Body)> Texts { get; } = [];
+        public List<(string From, string? Service, string To, string Body)> Texts { get; } = [];
         public List<(string From, string To, string Twiml)> Calls { get; } = [];
         public string? RecordingUrl { get; set; }
 
-        public Task<string> SendSmsAsync(string from, string to, string body, CancellationToken ct)
+        public Task<string> SendTextAsync(
+            string from, string? messagingServiceSid, string to, string body, CancellationToken ct)
         {
             if (throws is not null) return Task.FromException<string>(throws);
-            Texts.Add((from, to, body));
+            Texts.Add((from, messagingServiceSid, to, body));
             return Task.FromResult("SM0123456789abcdef");
         }
 
@@ -45,6 +46,11 @@ public sealed class TwilioSenderTests
         VoiceRecordingUrl = "https://api.twilio.com/2010-04-01/Accounts/AC0/Recordings/RE0.mp3",
     };
 
+    private static TwilioSettings WithRichText => Configured with
+    {
+        MessagingServiceSid = "MG0123456789abcdef0123456789abcdef",
+    };
+
     private static OutgoingMessage Message => new("Subject ignored", "Dinner Friday at 6:30.");
 
     private static ApiException Api(int code, string message = "Twilio said no") =>
@@ -62,8 +68,44 @@ public sealed class TwilioSenderTests
         Assert.Equal("SM0123456789abcdef", outcome.ProviderMessageId);
         var sent = Assert.Single(twilio.Texts);
         Assert.Equal("+14355550188", sent.From);
+        Assert.Null(sent.Service);
         Assert.Equal("+14355550101", sent.To);
         Assert.Equal("Dinner Friday at 6:30.", sent.Body);
+    }
+
+    [Fact]
+    public async Task A_messaging_service_carries_the_text_so_it_can_arrive_as_rcs()
+    {
+        var twilio = new FakeTwilio();
+        Assert.True(WithRichText.SendsRichText);
+
+        await new TextSender(twilio, WithRichText).SendAsync("+14355550101", Message);
+
+        // Twilio routes through the service, delivering RCS where the phone supports it
+        // and SMS everywhere else, from the one request.
+        var sent = Assert.Single(twilio.Texts);
+        Assert.Equal("MG0123456789abcdef0123456789abcdef", sent.Service);
+    }
+
+    [Fact]
+    public async Task Without_a_messaging_service_texts_still_go_out_as_plain_sms()
+    {
+        var twilio = new FakeTwilio();
+        Assert.False(Configured.SendsRichText);
+
+        await new TextSender(twilio, Configured).SendAsync("+14355550101", Message);
+
+        Assert.Null(Assert.Single(twilio.Texts).Service);
+    }
+
+    [Fact]
+    public void A_messaging_service_is_enough_to_send_with_even_without_a_number()
+    {
+        var serviceOnly = new TwilioSettings
+        {
+            AccountSid = "AC0", AuthToken = "t", MessagingServiceSid = "MG0", TestNumber = "+14355550164",
+        };
+        Assert.True(new TextSender(new FakeTwilio(), serviceOnly).IsConfigured);
     }
 
     [Fact]

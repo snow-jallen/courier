@@ -183,6 +183,20 @@
             </StackPanel>
           </Grid>
 
+          <StackPanel Spacing="6">
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Grid.Column="0" Classes="eyebrow" Text="MESSAGING SERVICE (OPTIONAL — TURNS TEXTS INTO RCS)"/>
+              <Border Grid.Column="1" CornerRadius="20" Padding="9,2" VerticalAlignment="Center"
+                      Background="{DynamicResource GoodSoft}" IsVisible="{Binding SendsRichText}">
+                <TextBlock Text="RCS on" FontSize="11" FontWeight="SemiBold"
+                           Foreground="{DynamicResource Good}"/>
+              </Border>
+            </Grid>
+            <TextBox Text="{Binding MessagingServiceSid}" Classes="mono" PlaceholderText="MG…"/>
+            <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource Ink3}"
+                       Text="Leave this empty and texts go out as ordinary SMS. Paste a Twilio Messaging Service that has an RCS sender on it, and phones that support RCS get a named sender with proper formatting instead of an unknown number — while everyone else still gets the same SMS as before. Nobody receives less than they do today, so there is nothing for anyone to choose."/>
+          </StackPanel>
+
           <Border Background="{DynamicResource AccentSoft}" CornerRadius="8" Padding="12,10">
             <TextBlock TextWrapping="Wrap" FontSize="12.5" Foreground="{DynamicResource AccentInk}"
                        Text="Texting everyone costs a few dollars, plus about $1.15 a month for the number. Twilio bills only what you send. To check the setup without messaging anyone, use the Test credentials from your Twilio console and put +15005550006 as your own number — Twilio accepts it and delivers nothing."/>

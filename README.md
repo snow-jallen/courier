@@ -84,6 +84,21 @@ What to do instead, which gets most of the way there:
 3. **Let the signature do the recognising.** People do not recognise numbers; they
    recognise names. That is what the signature is for.
 
+### RCS: making the sender recognisable
+
+Paste a Twilio **Messaging Service** with an RCS sender attached into Setup, and texts
+go out through it: phones that support RCS show a named, verified sender with proper
+formatting, and every other phone gets exactly the SMS it would have got anyway, from
+the same request. Leave it empty and nothing changes. There is no new channel and no new
+preference — the people who chose "Text" simply get a better text where their phone
+allows it.
+
+One thing to check before spending time on it: **RCS sender registration is built for
+businesses**, and Courier exists to serve one person's calling rather than an
+organisation. Ask Twilio whether you can register an agent as an individual, and say
+plainly that the sender name would be a person's. If the answer is no, leave the field
+empty — the signature is doing that job already.
+
 ### Before the first real broadcast
 
 Texting a list from a US long code requires **A2P 10DLC registration** — a one-off form

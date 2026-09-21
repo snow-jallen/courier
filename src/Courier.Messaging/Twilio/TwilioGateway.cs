@@ -10,7 +10,10 @@ namespace Courier.Messaging.Twilio;
 /// offline, with no account and no network.</summary>
 public interface ITwilioGateway
 {
-    Task<string> SendSmsAsync(string from, string to, string body, CancellationToken ct);
+    /// <summary>Sends a text. When <paramref name="messagingServiceSid"/> is given the
+    /// message goes through that service, which is how it reaches RCS-capable phones as
+    /// RCS and everyone else as SMS, from the one request.</summary>
+    Task<string> SendTextAsync(string from, string? messagingServiceSid, string to, string body, CancellationToken ct);
 
     /// <summary>Places a call that runs the TwiML given, and answers with its call id.
     /// Passing the TwiML inline is what lets Courier work with no web server and no
@@ -26,11 +29,18 @@ public sealed class TwilioGateway(TwilioSettings settings) : ITwilioGateway
 {
     private ITwilioRestClient Client => new TwilioRestClient(settings.AccountSid, settings.AuthToken);
 
-    public async Task<string> SendSmsAsync(string from, string to, string body, CancellationToken ct)
+    public async Task<string> SendTextAsync(
+        string from, string? messagingServiceSid, string to, string body, CancellationToken ct)
     {
-        var message = await MessageResource.CreateAsync(
-            new CreateMessageOptions(new PhoneNumber(to)) { From = new PhoneNumber(from), Body = body },
-            Client);
+        var options = new CreateMessageOptions(new PhoneNumber(to)) { Body = body };
+
+        // A messaging service and an explicit From are mutually exclusive: the service
+        // chooses the sender, and choosing it for the service disables the RCS routing
+        // that is the whole point of using one.
+        if (!string.IsNullOrWhiteSpace(messagingServiceSid)) options.MessagingServiceSid = messagingServiceSid;
+        else options.From = new PhoneNumber(from);
+
+        var message = await MessageResource.CreateAsync(options, Client);
         return message.Sid;
     }
 

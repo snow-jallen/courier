@@ -29,6 +29,7 @@ public sealed partial class SetupViewModel : ObservableObject
         _authToken = settings.Twilio.AuthToken;
         _fromNumber = settings.Twilio.FromNumber;
         _testNumber = settings.Twilio.TestNumber;
+        _messagingServiceSid = settings.Twilio.MessagingServiceSid;
         _recordingUrl = settings.Twilio.VoiceRecordingUrl;
         _databasePath = services.DatabasePath;
         _settingsPath = store.Path;
@@ -64,6 +65,11 @@ public sealed partial class SetupViewModel : ObservableObject
     [ObservableProperty] private string _authToken;
     [ObservableProperty] private string _fromNumber;
     [ObservableProperty] private string _testNumber;
+    [ObservableProperty] private string _messagingServiceSid;
+
+    public bool SendsRichText => MessagingServiceSid.Trim().Length > 0;
+
+    partial void OnMessagingServiceSidChanged(string value) => OnPropertyChanged(nameof(SendsRichText));
     [ObservableProperty] private string _recordingUrl;
     [ObservableProperty] private string _twilioStatus = "";
     [ObservableProperty] private bool _twilioOk;
@@ -89,6 +95,7 @@ public sealed partial class SetupViewModel : ObservableObject
             AuthToken = AuthToken.Trim(),
             FromNumber = FromNumber.Trim(),
             TestNumber = TestNumber.Trim(),
+            MessagingServiceSid = MessagingServiceSid.Trim(),
             VoiceRecordingUrl = RecordingUrl.Trim(),
         },
     };

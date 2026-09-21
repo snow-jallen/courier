@@ -27,12 +27,25 @@ public sealed record TwilioSettings
     /// <summary>Where the Test buttons send to — the user's own phone, in E.164.</summary>
     public string TestNumber { get; init; } = "";
 
+    /// <summary>A Twilio Messaging Service with an RCS sender attached, if there is one.
+    ///
+    /// Sending through the service rather than the bare number is what turns a plain
+    /// text into RCS — a named, verified sender with real formatting — for the people
+    /// whose phones support it. Twilio falls back to SMS from the same request for
+    /// everyone else, so nobody receives less than they do today. Empty means texts go
+    /// out from <see cref="FromNumber"/> as ordinary SMS.</summary>
+    public string MessagingServiceSid { get; init; } = "";
+
+    public bool SendsRichText => MessagingServiceSid.Trim().Length > 0;
+
     /// <summary>Twilio-hosted URL of the recording played to people who prefer a call.
     /// Produced by having Courier ring the user and record them, so no file ever needs
     /// hosting anywhere.</summary>
     public string VoiceRecordingUrl { get; init; } = "";
 
-    public bool IsComplete => AccountSid.Length > 0 && AuthToken.Length > 0 && FromNumber.Length > 0;
+    public bool IsComplete =>
+        AccountSid.Length > 0 && AuthToken.Length > 0
+        && (FromNumber.Length > 0 || MessagingServiceSid.Length > 0);
 }
 
 public sealed record CourierSettings

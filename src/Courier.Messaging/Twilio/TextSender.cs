@@ -21,7 +21,12 @@ public sealed class TextSender(ITwilioGateway gateway, TwilioSettings settings) 
 
         try
         {
-            var sid = await gateway.SendSmsAsync(settings.FromNumber, address.Trim(), message.Body, cancellation);
+            var sid = await gateway.SendTextAsync(
+                settings.FromNumber,
+                settings.SendsRichText ? settings.MessagingServiceSid.Trim() : null,
+                address.Trim(),
+                message.Body,
+                cancellation);
             return SendOutcome.Sent(sid);
         }
         catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
@@ -45,7 +50,9 @@ public sealed class TextSender(ITwilioGateway gateway, TwilioSettings settings) 
 
         var outcome = await SendAsync(
             destination,
-            new OutgoingMessage("", "This is a test from Courier. Texting works. Nobody else was sent anything."),
+            new OutgoingMessage("", settings.SendsRichText
+                ? "This is a test from Courier. Texting works, and this went out through your messaging service, so phones that support RCS will show it as RCS. Nobody else was sent anything."
+                : "This is a test from Courier. Texting works. Nobody else was sent anything."),
             cancellation);
 
         return outcome.Status == SendStatus.Sent
