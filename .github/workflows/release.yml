@@ -3,7 +3,9 @@ name: Release
 # Every push to main becomes a release. The version is 1.0.<run number>, which always
 # goes up and never has to be decided — Velopack only cares that it increases.
 #
-# Put [skip release] in a commit message to push without building one.
+# Put [skip release] in the commit's subject line to push without building one. Only
+# the subject is read: a commit body that merely mentions the phrase — this file's own
+# history, for instance — should not stop a release.
 #
 # Each platform has to be packaged on itself — Velopack builds a Windows installer only
 # on Windows, and needs macOS's own tools for a .app bundle — so the matrix is four real
@@ -24,16 +26,27 @@ permissions:
 
 jobs:
   test:
-    if: "!contains(github.event.head_commit.message, '[skip release]')"
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.value }}
+      skip: ${{ steps.gate.outputs.skip }}
     steps:
+      - uses: actions/checkout@v4
+
       - name: Work out the version
         id: version
         run: echo "value=1.0.${{ github.run_number }}" >> "$GITHUB_OUTPUT"
 
-      - uses: actions/checkout@v4
+      - name: Is this one to release?
+        id: gate
+        run: |
+          subject=$(git log -1 --pretty=%s)
+          echo "subject: $subject"
+          if [[ "$subject" == *"[skip release]"* ]]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
@@ -43,6 +56,7 @@ jobs:
 
   package:
     needs: test
+    if: needs.test.outputs.skip != 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -116,6 +130,7 @@ jobs:
 
   publish:
     needs: [test, package]
+    if: needs.test.outputs.skip != 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
