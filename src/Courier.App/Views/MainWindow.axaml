@@ -20,6 +20,9 @@
     <DataTemplate DataType="vm:LcrBacklogViewModel">
       <views:LcrBacklogView/>
     </DataTemplate>
+    <DataTemplate DataType="vm:HistoryViewModel">
+      <views:HistoryView/>
+    </DataTemplate>
     <DataTemplate DataType="vm:SetupViewModel">
       <views:SetupView/>
     </DataTemplate>
@@ -73,6 +76,7 @@
           <RadioButton Classes="nav" GroupName="nav" Content="People" Click="OnPeople"/>
           <RadioButton Classes="nav" GroupName="nav" Content="Send a message" Click="OnSend"/>
           <RadioButton Classes="nav" GroupName="nav" Content="To enter in LCR" Click="OnLcr"/>
+          <RadioButton Classes="nav" GroupName="nav" Content="What you have sent" Click="OnHistory"/>
           <RadioButton Classes="nav" GroupName="nav" Content="Setup" Click="OnSetup"/>
         </StackPanel>
       </DockPanel>

@@ -14,6 +14,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
     private PeopleViewModel _people = null!;
     private SendViewModel _send = null!;
     private LcrBacklogViewModel _lcr = null!;
+    private HistoryViewModel _history = null!;
     private SetupViewModel _setup = null!;
 
     [ObservableProperty] private object _current;
@@ -44,6 +45,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
         _people = new PeopleViewModel(_services);
         _send = new SendViewModel(_services, _store);
         _lcr = new LcrBacklogViewModel(_services, _clipboard);
+        _history = new HistoryViewModel(_services, _clipboard);
         _setup = new SetupViewModel(
             _services, _store,
             databases: _picker as IDatabasePicker,
@@ -90,6 +92,13 @@ public sealed partial class MainWindowViewModel : ObservableObject
         RefreshSender();
         Current = _lcr;
         await _lcr.LoadAsync();
+    }
+
+    public async Task ShowHistoryAsync()
+    {
+        RefreshSender();
+        Current = _history;
+        await _history.LoadAsync();
     }
 
     public void ShowSetup() => Current = _setup;

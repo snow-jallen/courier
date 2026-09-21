@@ -70,6 +70,7 @@ public partial class MainWindow : Window, IFilePicker, IClipboardWriter, IDataba
     private async void OnPeople(object? sender, RoutedEventArgs e) => await Show(m => m.ShowPeopleAsync());
     private async void OnSend(object? sender, RoutedEventArgs e) => await Show(m => m.ShowSendAsync());
     private async void OnLcr(object? sender, RoutedEventArgs e) => await Show(m => m.ShowLcrAsync());
+    private async void OnHistory(object? sender, RoutedEventArgs e) => await Show(m => m.ShowHistoryAsync());
     private void OnSetup(object? sender, RoutedEventArgs e) => _model?.ShowSetup();
 
     /// <summary>A screen that cannot load is not a reason to take the whole window

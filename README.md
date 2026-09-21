@@ -25,6 +25,10 @@ Built for one person on one computer, with no server and no account to sign into
    off the screen, chosen per message. Either way you can have Courier ring you first and play back
    exactly what everyone else will hear.
 
+4. **Look back.** Every send is kept: what it said, when it went, who it went to, on
+   which channel, at which address, and what came back. Searchable per person and
+   copyable as text.
+
 ## Setting it up
 
 **[SETUP.md](SETUP.md) is the step-by-step guide** — creating the accounts, getting each
