@@ -19,6 +19,13 @@ Built for one person on one computer, with no server and no account to sign into
 3. **Send.** Write a message once. It goes out by e-mail, text, or a recording played
    over a phone call, split by what each person chose.
 
+## Setting it up
+
+**[SETUP.md](SETUP.md) is the step-by-step guide** — creating the accounts, getting each
+value Courier asks for, and registering so the texts actually arrive. Written for
+somebody who does not work with this sort of thing. About an hour, plus a few days of
+waiting for one registration.
+
 ## Running it
 
     dotnet run --project src/Courier.App
