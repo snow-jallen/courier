@@ -1052,7 +1052,7 @@ Expected: all pass, including every existing `LcrReportParserTests` case against
 - [ ] **Step 8: Commit**
 
 ```bash
-git add -A src/Courier.Core/Import tests/Courier.Tests/LcrReportParserTests.cs tests/Courier.Tests/RealReportTests.cs
+git add -A src/Courier.Core/Import tests/Courier.Tests/LcrReportParserTests.cs tests/Courier.Tests/RealReportTests.cs tests/Courier.Tests/ImportServiceTests.cs tests/Courier.Tests/DirectoryServiceTests.cs
 git commit -F - <<'MSG'
 refactor: pick the report format by inspecting the file
 
