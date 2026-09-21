@@ -202,17 +202,41 @@ public sealed class UserInterfaceTests : IDisposable
                 $"{scroller} was {small.Width:0} wide in a 1000px window and {large.Width:0} in a 1500px one");
         }, _folder);
 
+    /// <summary>The Send screen carries a recipient list and a compose area, and in a
+    /// short window they cannot both have what they want. The list keeps a usable
+    /// minimum and the page scrolls instead of squeezing it to nothing.</summary>
     [Fact]
-    public Task The_window_can_be_made_small_without_anything_spilling_out() =>
+    public Task A_short_window_scrolls_rather_than_crushing_the_recipient_list() =>
         InWindow(async (window, model) =>
         {
             await model.ShowSendAsync();
-            Resize(window, 820, 560);
+            Resize(window, 900, 600);
 
-            var scroller = Scroller(window, "RecipientScroller");
-            Assert.True(scroller.Bounds.Height > 0, "the recipient list collapsed to nothing");
-            Assert.True(scroller.Bounds.Width <= window.Width,
+            var list = Scroller(window, "RecipientScroller");
+            Assert.True(list.Bounds.Height >= 200,
+                $"the recipient list was squeezed to {list.Bounds.Height:0}px");
+            Assert.True(list.Bounds.Width <= window.Width,
                 "the recipient list is wider than the window it sits in");
+
+            var page = Scroller(window, "PageScroller");
+            Assert.True(page.Extent.Height > page.Viewport.Height,
+                "the page does not scroll, so the compose area below the list is unreachable");
+        }, _folder);
+
+    [Fact]
+    public Task A_tall_window_gives_the_extra_room_to_the_list_rather_than_scrolling() =>
+        InWindow(async (window, model) =>
+        {
+            await model.ShowSendAsync();
+
+            Resize(window, 1440, 960);
+            var roomy = Scroller(window, "RecipientScroller").Bounds.Height;
+
+            Resize(window, 900, 600);
+            var cramped = Scroller(window, "RecipientScroller").Bounds.Height;
+
+            Assert.True(roomy > cramped + 150,
+                $"the list was {cramped:0}px in a short window and only {roomy:0}px in a tall one");
         }, _folder);
 
     [Fact]

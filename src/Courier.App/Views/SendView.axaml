@@ -4,8 +4,11 @@
              x:Class="Courier.App.Views.SendView"
              x:DataType="vm:SendViewModel">
 
-  <Grid Margin="28,26,28,24" RowDefinitions="*,Auto">
-    <Grid Grid.Row="0" RowDefinitions="Auto,Auto,Auto,Auto,*,Auto" MinHeight="180">
+  <ScrollViewer Name="PageScroller" VerticalScrollBarVisibility="Auto"
+                HorizontalScrollBarVisibility="Disabled">
+  <Grid Margin="28,26,28,24" RowDefinitions="*,Auto"
+        MinHeight="{Binding $parent[ScrollViewer].Bounds.Height}">
+    <Grid Grid.Row="0" RowDefinitions="Auto,Auto,Auto,Auto,*,Auto" MinHeight="300">
     <StackPanel Grid.Row="0">
     <TextBlock Classes="h2" Text="Send a message"/>
     <TextBlock Classes="lede" Margin="0,4,0,0"
@@ -72,7 +75,7 @@
             <TextBlock Grid.Column="6" Classes="colhead" Text="GOES TO"/>
           </Grid>
         </Border>
-        <ScrollViewer Grid.Row="1" Name="RecipientScroller"
+        <ScrollViewer Grid.Row="1" Name="RecipientScroller" MinHeight="200"
                       VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
           <ItemsControl ItemsSource="{Binding Rows}">
             <ItemsControl.ItemTemplate>
@@ -233,4 +236,5 @@
       </Border>
     </Grid>
   </Grid>
+  </ScrollViewer>
 </UserControl>
