@@ -6,8 +6,12 @@
     <Nullable>enable</Nullable>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>../../assets/courier.ico</ApplicationIcon>
-    <AssemblyVersion>1.0.0</AssemblyVersion>
-    <FileVersion>1.0.0</FileVersion>
+    <!-- Only Version, and only as the default for a build from source. The release
+         workflow passes -p:Version=1.0.<run number>, which supplies AssemblyVersion
+         and FileVersion too — but only because neither is set here. Setting either
+         one outright beats the command line, which is how every release from 1.0.1
+         to 1.0.6 came to tell the user it was 1.0.0. ReleaseVersionTests keeps them
+         out. -->
     <Version>1.0.0</Version>
     <Product>Courier</Product>
     <Company>Courier</Company>
