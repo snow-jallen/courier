@@ -336,10 +336,13 @@ public sealed class UserInterfaceTests : IDisposable
         }, _folder);
 
     [Fact(Skip = "Never actually ran until the InWindow helper was fixed; expects \"Send to 1 " +
-        "person\" after choosing Everyone by text, gets \"Send to 0 people\". Likely the same " +
-        "cause as the phone-display failures below: DirectoryService.ToRecipient's Phone has no " +
-        "fallback to Person.LcrPhone, so the seeded person has no usable phone and nobody is " +
-        "reachable by text. Pre-existing, unrelated to report formats - needs triage.")]
+        "person\" after choosing Everyone by text, gets \"Send to 0 people\". Same cause as the " +
+        "phone-display failures below: SeedOneAsync sets Person.LcrPhone directly and seeds no " +
+        "phone ContactPoint, so DirectoryService.ToRecipient correctly reports no phone for this " +
+        "person and nobody is reachable by text. The fix is for SeedOneAsync to seed a phone " +
+        "ContactPoint, not for ToRecipient to fall back to LcrPhone - that would put an " +
+        "un-normalised number in Recipient.Phone and break the Twilio-shape assertion elsewhere in " +
+        "this file. Pre-existing, unrelated to report formats - needs triage.")]
     public Task Choosing_a_channel_for_everyone_overrides_what_each_person_picked() =>
         InWindow(async (_, model) =>
         {
@@ -439,10 +442,13 @@ public sealed class UserInterfaceTests : IDisposable
 
     [Fact(Skip = "Never actually ran until the InWindow helper was fixed; expects the seeded " +
         "person's phone (\"(435) 555-0111\") on the People row, gets \"—\" (Person.Phone is null). " +
-        "DirectoryService.ToRecipient reads Phone only from ContactPoints (via Best(p, " +
-        "ContactKind.Phone)) with no fallback to Person.LcrPhone, unlike Email which falls back to " +
-        "LcrEmail - SeedOneAsync sets LcrPhone directly with no ContactPoint row, so Recipient.Phone " +
-        "is always null here. Pre-existing, unrelated to report formats - needs triage.")]
+        "SeedOneAsync sets Person.LcrPhone directly and seeds no phone ContactPoint, so " +
+        "DirectoryService.ToRecipient - which reads Phone only from ContactPoints, via Best(p, " +
+        "ContactKind.Phone) - correctly reports no phone for this person. The fix is for " +
+        "SeedOneAsync to seed a phone ContactPoint (as production always does alongside LcrPhone), " +
+        "not for ToRecipient to fall back to LcrPhone the way Email falls back to LcrEmail - that " +
+        "fallback would hand Twilio an un-normalised number. Pre-existing, unrelated to report " +
+        "formats - needs triage.")]
     public Task Numbers_and_notes_are_shown_the_way_people_read_them() =>
         InWindow(async (_, model) =>
         {
@@ -474,9 +480,11 @@ public sealed class UserInterfaceTests : IDisposable
 
     [Fact(Skip = "Never actually ran until the InWindow helper was fixed; expects the seeded " +
         "person's phone (\"(435) 555-0111\") in the editor, gets an empty string. Same cause as " +
-        "Numbers_and_notes_are_shown_the_way_people_read_them: DirectoryService.ToRecipient's Phone " +
-        "has no fallback to Person.LcrPhone the way Email falls back to LcrEmail. Pre-existing, " +
-        "unrelated to report formats - needs triage.")]
+        "Numbers_and_notes_are_shown_the_way_people_read_them: SeedOneAsync sets Person.LcrPhone " +
+        "directly and seeds no phone ContactPoint, so DirectoryService.ToRecipient correctly reports " +
+        "no phone for this person. The fix is for SeedOneAsync to seed a phone ContactPoint, not for " +
+        "ToRecipient to gain a LcrPhone fallback. Pre-existing, unrelated to report formats - needs " +
+        "triage.")]
     public Task Double_clicking_a_row_opens_the_edit_pane() =>
         InWindow(async (window, model) =>
         {
