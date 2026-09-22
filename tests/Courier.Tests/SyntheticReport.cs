@@ -78,4 +78,50 @@ internal static class SyntheticReport
 
         return builder.Build();
     }
+
+    // The real Single Adults export's own absolute numbers, not the contrasting
+    // values used above: 8.9pt text, heading lines 12.8pt apart, and a first body
+    // row 23.2pt below the heading. RowBreakFactor is edited data now rather than a
+    // hard-coded constant, and this is the one fixture that would catch a bad edit
+    // to it without a real export on hand — the tests that would otherwise catch it
+    // skip when one isn't present.
+    private const double RealSize = 8.9, RealStep = 12.8, RealRowGap = 23.2;
+
+    public static byte[] BuildAtRealGeometry()
+    {
+        var builder = new PdfDocumentBuilder();
+        var page = builder.AddPage(612, 792);
+        var font = builder.AddStandard14Font(Standard14Font.Helvetica);
+
+        void Put(string text, double x, double y)
+        {
+            if (text.Length > 0) page.AddText(text, RealSize, new PdfPoint(x, y), font);
+        }
+
+        const double top = 700;
+        Put("Preferred", XName, top); Put("Individual", XPhone, top);
+        Put("Birthday", XBirthday, top); Put("Address -", XAddress, top);
+        Put("Individual E-mail", XEmail, top - RealStep); Put("Unit", XUnit, top - RealStep);
+        Put("Age", XAge, top - RealStep);
+        Put("Name", XName, top - 2 * RealStep); Put("Phone", XPhone, top - 2 * RealStep);
+        Put("(1 Jan)", XBirthday, top - 2 * RealStep); Put("Street 1", XAddress, top - 2 * RealStep);
+
+        // One person, one wrapped cell (the name), 23.2pt below the heading's last line.
+        var centre = top - 2 * RealStep - RealRowGap - RealStep / 2;
+        Put("Ashby,", XName, centre + RealStep / 2);
+        Put("Miriam", XName, centre - RealStep / 2);
+        Put("m.ashby@example.com", XEmail, centre);
+        Put("(435) 555-0111", XPhone, centre);
+        Put("Manti", XUnit, centre);
+        Put("40", XAge, centre);
+        Put("6 May", XBirthday, centre);
+        Put("12 Main", XAddress, centre);
+
+        Put("Single Adults", 37, top + 28);
+        Put("https://lcr.churchofjesuschrist.org/mlt/report", 37, 28);
+        Put("Page 1 of 1", 533, 20);
+        Put("Count: 1", 37, 40);
+
+        return builder.Build();
+    }
 }

@@ -48,6 +48,26 @@ public sealed class LcrReportParserTests
     }
 
     [Fact]
+    public void Reads_a_row_laid_out_at_the_real_reports_own_geometry()
+    {
+        // Contrast with the fixture above: this one uses the real Single Adults
+        // export's own absolute numbers (8.9pt text, 12.8pt wraps, 23.2pt row gap)
+        // rather than values merely chosen to contrast with each other, so a bad
+        // edit to RowBreakFactor shows up here even with no real export on hand.
+        using var stream = new MemoryStream(SyntheticReport.BuildAtRealGeometry());
+        var report = LcrReportParser.Parse(stream, "synthetic-real-geometry.pdf");
+
+        var row = Assert.Single(report.Rows);
+        Assert.Equal("Ashby, Miriam", row.Name);
+        Assert.Equal("m.ashby@example.com", row.Email);
+        Assert.Equal("(435) 555-0111", row.Phone);
+        Assert.Equal("Manti", row.Unit);
+        Assert.Equal("40", row.Age);
+        Assert.Equal("6 May", row.Birthday);
+        Assert.Equal("12 Main", row.Address);
+    }
+
+    [Fact]
     public void Refuses_a_pdf_that_is_not_a_report_it_knows()
     {
         var notTheReport = new PdfNotAReport();
