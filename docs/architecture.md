@@ -17,39 +17,66 @@ gets caught before a user finds it.
 
 This is the hard part, and it is worth knowing why before changing any of it.
 
-The LCR report is a rendered HTML table. Its PDF contains no rules, no cell
+An LCR report is a rendered HTML table. Its PDF contains no rules, no cell
 boundaries, and no reading order that matches the table — pulling the text out
 linearly interleaves the columns into nonsense. The only structure available is where
 each glyph sits on the page.
 
-Two measured facts drive `PdfTableReader`:
+Two measured facts drive `PdfTableReader`, and both hold for every report seen so far:
 
 * **Cells are centred vertically within their row, not aligned to its top.** A cell
   wrapping to three lines sits at the row's centre plus and minus one line height; a
   two-line cell sits at plus and minus half of one. So a row's baselines land on a grid
   of *half* the line height, and no cell's first line lines up with any other cell's.
   This is why a row cannot be found by looking for where its name begins.
-* **Rows are separated by more vertical space than the lines inside them.** On a real
-  export whose text is 8.9pt: lines wrapped inside a row are 12.8pt apart (1.44x the
-  text size), consecutive rows are 23.2pt apart (2.6x). `RowBreakFactor` sits at 2.0,
-  between the two, and is scaled by the text size rather than by the other gaps on the
-  page — a relative rule cannot tell a page of single-line rows apart from one tall row.
+* **Rows are separated by more vertical space than the lines inside them.** How much
+  more differs from report to report, so the ratio belongs to the format rather than to
+  the reader — see `IReportFormat.RowBreakFactor`. It is scaled by the text size rather
+  than by the other gaps on the page, because a relative rule cannot tell a page of
+  single-line rows apart from one tall row.
 
-Three more details that each cost a debugging session:
+### One reader, several reports
+
+Courier reads two reports today and the list is meant to grow, so everything that
+differs between them lives in a format rather than in the parser. A format states the
+phrases that name its columns and the order they come in, the row-break factor above,
+the lines that are page furniture, and which fields it actually prints.
+
+`LcrReportParser` offers each page to every registered format; the first to recognise
+a heading drives the rest of the document. `ReportFormats` holds the registry and both
+descriptors. A third report of the same shape — a table whose own headings give the
+column positions — is a short record. One of a different shape implements
+`IReportFormat` and shares only `PdfTableReader`.
+
+    Single Adults                 8.9pt text, rows 2.6x apart, wraps 1.44x
+                                  name, email, phone, unit, age, birthday, address
+    Organizations and Callings    8.0pt text, rows 1.68x apart, wraps 0.56x
+                                  name, gender, age, birth date, phone, email, unit
+
+Details that each cost a debugging session:
 
 * Glyph positions come from the **advance box** (`StartBaseLine`/`EndBaseLine`), not the
   ink bounding box. Ink bounds leave gaps inside a word wide enough to look like spaces,
   which turns `17 Jan` into `1 7 Jan` and breaks every birthday.
-* Space glyphs are **kept**, because the report writes real spaces and honouring them
+* Space glyphs are **kept**, because the reports write real spaces and honouring them
   beats inferring every space from a gap.
 * Column positions are **read from the report's own headings**, never hard-coded, and
-  only from lines carrying two or more headings. The report's toolbar line reads
+  only from lines carrying two or more headings. The Single Adults toolbar line reads
   "Group by Unit Edit Report", and matching its "Unit" puts the columns out of order and
   folds four fields into one. The detected positions must increase left to right or the
   layout is rejected.
+* Headings are detected **one row group at a time**, never merged across a page. Page 1
+  of Organizations and Callings carries a `Name` heading in two different tables, at
+  x=225.6 and x=54.1; merged, the columns run right to left and nothing is readable.
+* Body lines are taken **only from below the heading**. That same page 1 prints the
+  stake's Single Adult callings above the members table, and those rows have names in
+  them.
+* A column may be found and its contents **discarded**. Organizations and Callings
+  prints Gender between the name and the age. Courier has no use for it, but without an
+  edge there the `F` joins the name and everyone reads "Ashdown, Marigold F".
 
-A PDF that is not this report fails loudly with `LcrReportException` rather than
-importing nonsense.
+A PDF that no format recognises fails loudly with `LcrReportException`, naming the
+reports Courier does know, rather than importing nonsense.
 
 ## What an import may and may not touch
 
@@ -63,10 +90,19 @@ changes, and is what tells two people of the same name apart.
 
 The split that matters:
 
-* **An import owns** ward, age, birthday, address, and the e-mail and phone as printed.
-  These are overwritten every time.
+* **An import owns the fields its report prints** — ward, age, birthday, address, and
+  the e-mail and phone as printed. These are overwritten every time.
 * **Courier owns** the preferred channel, notes, and any contact details added by hand.
   No import may touch them. There are tests for this.
+
+The first clause used to read "an import owns ward, age, birthday, address …" flatly,
+which was true while there was one report and it printed all six. Organizations and
+Callings prints no address at all and never fills its age column, and blanking a
+directory's addresses because the user reached for the other report is not a trade
+anyone would make. So a format declares what it prints, `ImportPlanner` diffs only
+those fields, `ImportService` writes only those fields, and the Import screen says
+which report was read and what it leaves out. A field the report printed and left
+blank is still cleared — the report said something about it.
 
 Nobody is ever deleted. Falling out of an export sets `IsActive = false` and
 `DeactivatedOn`; reappearing clears both and keeps the original `FirstSeenOn`, the
