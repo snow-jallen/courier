@@ -80,7 +80,7 @@ public sealed class ImportPlannerTests
 
         var note = Assert.Single(plan.Notes);
         Assert.Contains("Organizations and Callings", note, StringComparison.Ordinal);
-        Assert.Contains("addresses and ages", note, StringComparison.Ordinal);
+        Assert.Contains("addresses or ages", note, StringComparison.Ordinal);
         Assert.Contains("kept", note, StringComparison.Ordinal);
     }
 

@@ -123,10 +123,12 @@ public static class ImportPlanner
                "so the ones already recorded are kept."];
     }
 
+    // "or", not "and": these are named inside "does not list ...", a negative
+    // sentence where "and" can be misread as denying only the pair together.
     private static string Listed(IReadOnlyList<string> items) => items.Count switch
     {
         1 => items[0],
-        2 => $"{items[0]} and {items[1]}",
-        _ => $"{string.Join(", ", items.Take(items.Count - 1))} and {items[^1]}",
+        2 => $"{items[0]} or {items[1]}",
+        _ => $"{string.Join(", ", items.Take(items.Count - 1))} or {items[^1]}",
     };
 }
