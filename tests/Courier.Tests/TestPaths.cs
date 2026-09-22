@@ -39,6 +39,18 @@ internal static class TestPaths
             return File.Exists(path) ? path : null;
         }
     }
+
+    /// <summary>A real Member List export, if one has been placed in the gitignored
+    /// folder. Null on a machine that has never seen it.</summary>
+    public static string? RealMemberList
+    {
+        get
+        {
+            if (RepoRoot is null) return null;
+            var path = Path.Combine(RepoRoot, "tests", "Courier.Tests", "Fixtures", "private", "manti-member-list.pdf");
+            return File.Exists(path) ? path : null;
+        }
+    }
 }
 
 /// <summary>Marks a test that needs a real LCR export and skips it when none is present.</summary>
@@ -59,5 +71,16 @@ public sealed class RequiresRealCallingsReportAttribute : FactAttribute
     {
         if (TestPaths.RealCallingsReport is null)
             Skip = "No Organizations and Callings export in tests/Courier.Tests/Fixtures/private/ — see the README in tests/Courier.Tests/Fixtures/.";
+    }
+}
+
+/// <summary>Marks a test that needs a real Member List export and skips it when none
+/// is present.</summary>
+public sealed class RequiresRealMemberListAttribute : FactAttribute
+{
+    public RequiresRealMemberListAttribute()
+    {
+        if (TestPaths.RealMemberList is null)
+            Skip = "No Member List export in tests/Courier.Tests/Fixtures/private/ — see the README in tests/Courier.Tests/Fixtures/.";
     }
 }

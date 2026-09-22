@@ -9,7 +9,7 @@
 
     <TextBlock Classes="h2" Text="Import from LCR"/>
     <TextBlock Classes="lede" Margin="0,4,0,0"
-               Text="Export the Single Adults report, or the Organizations and Callings report, from LCR as a PDF and open it here. Courier works out which one it is. Nothing is saved until you have looked over the changes."/>
+               Text="Export the Single Adults report, the Organizations and Callings report, or a ward's Member List from LCR as a PDF and open it here. Courier works out which one it is. Nothing is saved until you have looked over the changes."/>
 
     <!-- The file is private. Say so where the file is actually being handled. -->
     <Border Classes="notice privacy" Margin="0,16,0,0">

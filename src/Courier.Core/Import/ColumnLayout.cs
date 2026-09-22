@@ -55,6 +55,11 @@ public sealed class ColumnLayout
             var text = line.Cell(left, right);
             if (text.Length > 0) parts.Add(text);
         }
-        return string.Join(' ', parts);
+
+        // Every other field is words, and the lines it wrapped over are rejoined with a
+        // space: "812 North 700" and "East" are two words of one address. An e-mail is
+        // not words. The Member List wraps a long one mid-address, and a space put back
+        // between the halves turns it into something nobody can be written to.
+        return string.Join(field == LcrField.Email ? "" : " ", parts);
     }
 }

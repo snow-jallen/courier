@@ -308,3 +308,158 @@ public sealed class RealCallingsImportTests(ITestOutputHelper output) : IDisposa
         catch (IOException) { /* a temp file left behind harms nothing */ }
     }
 }
+
+/// <summary>Measures the parser against a real Member List export. The numbers here
+/// are what decide whether an import of that report can be trusted, so they are
+/// asserted, not just printed.</summary>
+public sealed class RealMemberListTests(ITestOutputHelper output)
+{
+    [RequiresRealMemberList]
+    public void Reads_every_person_from_the_report()
+    {
+        var report = LcrReportParser.Parse(TestPaths.RealMemberList!);
+
+        var phone = new Regex(@"^(\(\d{3}\)\s*)?\d{3}-\d{4}$");
+        var email = new Regex(@"^[^@\s]+@[^@\s]+\.[A-Za-z]{2,}$");
+
+        // Unlike the other two reports, this one prints the year on a few rows.
+        var birthday = new Regex(@"^\d{1,2} [A-Z][a-z]{2}( \d{4})?$");
+
+        int Bad(Func<LcrRow, string> field, Regex shape) =>
+            report.Rows.Count(r => field(r).Length > 0 && !shape.IsMatch(field(r)));
+
+        output.WriteLine($"format      {report.Source.FormatName}");
+        output.WriteLine($"pages       {report.PageCount}");
+        output.WriteLine($"people      {report.Rows.Count}");
+        output.WriteLine($"bad phone   {Bad(r => r.Phone, phone)}");
+        output.WriteLine($"bad email   {Bad(r => r.Email, email)}");
+        output.WriteLine($"bad bday    {Bad(r => r.Birthday, birthday)}");
+        output.WriteLine($"no email    {report.Rows.Count(r => r.Email.Length == 0)}");
+        output.WriteLine($"no phone    {report.Rows.Count(r => r.Phone.Length == 0)}");
+        output.WriteLine($"with age    {report.Rows.Count(r => r.Age.Length > 0)}");
+        output.WriteLine($"with year   {report.Rows.Count(r => r.Birthday.Length > 7)}");
+        foreach (var r in report.Rows.Where(r => r.Phone.Length > 0 && !phone.IsMatch(r.Phone)).Take(5))
+            output.WriteLine($"  PHONE '{r.Phone}'");
+        foreach (var r in report.Rows.Where(r => r.Email.Length > 0 && !email.IsMatch(r.Email)).Take(5))
+            output.WriteLine($"  EMAIL shape: {r.Email.Length} chars, {r.Email.Count(c => c == '@')} at-sign(s)");
+        foreach (var r in report.Rows.Where(r => r.Birthday.Length > 0 && !birthday.IsMatch(r.Birthday)).Take(5))
+            output.WriteLine($"  BDAY  '{r.Birthday}'");
+
+        Assert.Equal("Member List", report.Source.FormatName);
+        Assert.Equal(5, report.PageCount);
+
+        // The report prints "Count: 160" in its own footer. Reading exactly that many
+        // people back is the strongest check available that no row was dropped.
+        Assert.Equal(160, report.Rows.Count);
+        Assert.Equal(0, Bad(r => r.Phone, phone));
+        Assert.Equal(0, Bad(r => r.Birthday, birthday));
+        Assert.Equal(0, Bad(r => r.Email, email));
+    }
+
+    [RequiresRealMemberList]
+    public void Reads_nothing_into_the_fields_this_report_does_not_print()
+    {
+        var report = LcrReportParser.Parse(TestPaths.RealMemberList!);
+
+        Assert.Equal(160, report.Rows.Count);
+        Assert.Equal(0, report.Rows.Count(r => r.Unit.Length > 0));
+        Assert.Equal(0, report.Rows.Count(r => r.Address.Length > 0));
+        Assert.False(report.Source.Carry(ReportFields.Unit));
+        Assert.False(report.Source.Carry(ReportFields.Address));
+    }
+
+    [RequiresRealMemberList]
+    public void Fills_the_age_column_too_rarely_to_carry_it()
+    {
+        // 2 rows of 160, and only where the report also prints a full birth date with
+        // its year. This is the measurement the format's Carries is arguing from, so
+        // it is worth failing when the export stops agreeing with it.
+        var report = LcrReportParser.Parse(TestPaths.RealMemberList!);
+        var withAge = report.Rows.Count(r => r.Age.Length > 0);
+
+        output.WriteLine($"rows with an age: {withAge} of {report.Rows.Count}");
+        Assert.True(withAge < report.Rows.Count / 10,
+            $"{withAge} of {report.Rows.Count} rows carry an age — enough that Carries should include it");
+        Assert.False(report.Source.Carry(ReportFields.Age));
+    }
+
+    [RequiresRealMemberList]
+    public void Every_person_has_a_surname_and_a_given_name()
+    {
+        var report = LcrReportParser.Parse(TestPaths.RealMemberList!);
+        var malformed = report.Rows
+            .Where(r => r.Name.Split(',', StringSplitOptions.TrimEntries).Length != 2
+                     || r.Name.Split(',', StringSplitOptions.TrimEntries).Any(p => p.Length == 0))
+            .ToList();
+        // The name is the thing under test, so it cannot be printed without printing a
+        // person; the part count shows the shape of the failure without it.
+        foreach (var r in malformed.Take(10))
+            output.WriteLine($"  NAME shape: {r.Name.Split(',', StringSplitOptions.TrimEntries).Length} part(s)");
+        Assert.True(malformed.Count == 0, $"{malformed.Count} names were not 'Surname, Given'");
+    }
+}
+
+/// <summary>Runs a genuine Member List export all the way through the importer into a
+/// real database, then imports it again to prove it settles.</summary>
+public sealed class RealMemberListImportTests(ITestOutputHelper output) : IDisposable
+{
+    private readonly string _path = Path.Combine(Path.GetTempPath(), $"courier-memberlist-{Guid.NewGuid():N}.db");
+
+    private Courier.Data.CourierDbContext Open()
+    {
+        var db = Courier.Data.CourierDatabase.Open(_path);
+        Microsoft.EntityFrameworkCore.RelationalDatabaseFacadeExtensions.Migrate(db.Database);
+        return db;
+    }
+
+    [RequiresRealMemberList]
+    public async Task The_whole_ward_imports_and_then_imports_again_unchanged()
+    {
+        using var db = Open();
+        var service = new Courier.Data.ImportService(db);
+
+        var (report, plan) = await service.PrepareAsync(TestPaths.RealMemberList!);
+        output.WriteLine($"first run: {plan.Added.Count} added, {plan.Warnings.Count} warnings");
+        output.WriteLine($"note: {string.Join(" ", plan.Notes)}");
+
+        Assert.Equal(160, plan.Added.Count);
+
+        // This report has no unit column, so nobody has a ward. That is not a warning:
+        // it would be the same warning about the same people on every import.
+        Assert.True(plan.Warnings.Count == 0, $"{plan.Warnings.Count} warnings on an import that should raise none");
+        Assert.Contains(plan.Notes, n => n.Contains("Member List", StringComparison.Ordinal));
+
+        var run = await service.ApplyAsync(report, plan, new DateOnly(2026, 9, 21));
+        Assert.Equal(160, run.AddedCount);
+
+        var people = await new Courier.Data.DirectoryService(db).RecipientsAsync();
+        Assert.Equal(160, people.Count);
+
+        var withPhone = people.Count(p => p.Phone is not null);
+        var withEmail = people.Count(p => p.Email is not null);
+        output.WriteLine($"reachable by phone: {withPhone}, by email: {withEmail}");
+        Assert.True(withPhone > 100, $"only {withPhone} people got a usable phone number");
+        Assert.True(withEmail > 100, $"only {withEmail} people got an email address");
+
+        var twilioShape = new Regex(@"^\+1\d{10}$");
+        Assert.Equal(0, people.Count(p => p.Phone is not null && !twilioShape.IsMatch(p.Phone)));
+
+        var (_, second) = await service.PrepareAsync(TestPaths.RealMemberList!);
+        output.WriteLine($"second run: {second.Added.Count} added, {second.Updated.Count} updated, " +
+                         $"{second.Deactivated.Count} deactivated, {second.Unchanged} unchanged");
+
+        // Assert.Empty on these would dump the offending PersonUpdate/NormalizedPerson
+        // records, names and contact details included; a count keeps a failure to a
+        // number.
+        Assert.True(second.Added.Count == 0, $"{second.Added.Count} added on a re-import that should change nothing");
+        Assert.True(second.Updated.Count == 0, $"{second.Updated.Count} updated on a re-import that should change nothing");
+        Assert.True(second.Deactivated.Count == 0, $"{second.Deactivated.Count} deactivated on a re-import that should change nothing");
+        Assert.Equal(160, second.Unchanged);
+    }
+
+    public void Dispose()
+    {
+        try { if (File.Exists(_path)) File.Delete(_path); }
+        catch (IOException) { /* a temp file left behind harms nothing */ }
+    }
+}

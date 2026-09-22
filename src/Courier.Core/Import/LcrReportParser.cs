@@ -101,9 +101,19 @@ public static class LcrReportParser
     }
 
     private static string Unrecognised(string fileName) =>
-        $"'{fileName}' does not look like a report Courier can read. It knows the " +
-        $"{string.Join(" report and the ", ReportFormats.Known.Select(f => f.Name))} report. " +
+        $"'{fileName}' does not look like a report Courier can read. It knows " +
+        $"{Listed(ReportFormats.Known.Select(f => $"the {f.Name} report").ToList())}. " +
         "Export one of those from LCR as a PDF and open it here.";
+
+    /// <summary>"the A report, the B report and the C report". Commas rather than a
+    /// string of "and"s, because one of the reports is called Organizations and
+    /// Callings and a list joined on "and" reads as four reports, not three.</summary>
+    private static string Listed(IReadOnlyList<string> items) => items.Count switch
+    {
+        0 => "",
+        1 => items[0],
+        _ => $"{string.Join(", ", items.Take(items.Count - 1))} and {items[^1]}",
+    };
 
     private static LcrRow? BuildRow(IReadOnlyList<TextLine> group, ColumnLayout layout, int page)
     {

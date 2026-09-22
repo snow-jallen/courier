@@ -64,8 +64,12 @@ public static class ImportPlanner
                 "That usually means the export is incomplete. Check it covers every ward before applying.");
         if (incoming.Count == 0)
             warnings.Add("No people were found in this file.");
-        foreach (var p in incoming.Where(p => p.Ward is null).Take(5))
-            warnings.Add($"{p.SortName} has an unrecognised unit ('{p.RawUnit}') and will be filed without a ward.");
+        // Only a report with a unit column can have an unrecognised unit. Without this
+        // guard the Member List, which has no such column, warns that the first five
+        // people in the ward have an unrecognised unit of '' — on every import.
+        if (source.Carry(ReportFields.Unit))
+            foreach (var p in incoming.Where(p => p.Ward is null).Take(5))
+                warnings.Add($"{p.SortName} has an unrecognised unit ('{p.RawUnit}') and will be filed without a ward.");
 
         return new ImportPlan(added, updated, deactivated, reactivated, unchanged, warnings, Notes(source));
     }

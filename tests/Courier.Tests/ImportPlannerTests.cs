@@ -24,6 +24,9 @@ public sealed class ImportPlannerTests
         new("Organizations and Callings",
             ReportFields.Unit | ReportFields.Birthday | ReportFields.Email | ReportFields.Phone);
 
+    private static readonly ReportSource MemberList =
+        new("Member List", ReportFields.Birthday | ReportFields.Email | ReportFields.Phone);
+
     [Fact]
     public void A_report_that_prints_no_addresses_does_not_clear_the_ones_on_record()
     {
@@ -82,6 +85,55 @@ public sealed class ImportPlannerTests
         Assert.Contains("Organizations and Callings", note, StringComparison.Ordinal);
         Assert.Contains("addresses or ages", note, StringComparison.Ordinal);
         Assert.Contains("kept", note, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_report_with_no_unit_column_does_not_clear_the_wards_on_record()
+    {
+        var existing = Existing("Ashby", "Miriam", ward: "Manti 3rd Ward");
+        var incoming = Incoming("Ashby", "Miriam", ward: null, address: null, age: null);
+
+        var plan = ImportPlanner.Plan([incoming], [existing], MemberList);
+
+        Assert.Empty(plan.Updated);
+        Assert.Equal(1, plan.Unchanged);
+    }
+
+    [Fact]
+    public void A_report_with_no_unit_column_does_not_call_everyone_s_unit_unrecognised()
+    {
+        // Every person on a Member List has no unit, because the report has no column
+        // for one. Warning about it would name five people on every single import and
+        // mean nothing.
+        var incoming = new[]
+        {
+            Incoming("Ashby", "Miriam", ward: null, address: null, age: null),
+            Incoming("Quilley", "Barnaby", ward: null, address: null, age: null),
+        };
+
+        var plan = ImportPlanner.Plan(incoming, [], MemberList);
+
+        Assert.Empty(plan.Warnings);
+    }
+
+    [Fact]
+    public void A_report_that_does_print_units_still_warns_about_one_it_cannot_place()
+    {
+        var incoming = Incoming("Ashby", "Miriam", ward: null, address: null, age: null);
+
+        var plan = ImportPlanner.Plan([incoming], [], Callings);
+
+        Assert.Contains(plan.Warnings, w => w.Contains("unrecognised unit", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void The_member_list_note_names_all_three_things_it_leaves_alone()
+    {
+        var plan = ImportPlanner.Plan([Incoming("Ashby", "Miriam", ward: null)], [], MemberList);
+
+        var note = Assert.Single(plan.Notes);
+        Assert.Contains("Member List", note, StringComparison.Ordinal);
+        Assert.Contains("wards, addresses or ages", note, StringComparison.Ordinal);
     }
 
     [Fact]

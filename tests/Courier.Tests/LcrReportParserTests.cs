@@ -77,6 +77,14 @@ public sealed class LcrReportParserTests
         Assert.Contains("holiday-photos.pdf", error.Message, StringComparison.Ordinal);
         Assert.Contains("Single Adults", error.Message, StringComparison.Ordinal);
         Assert.Contains("Organizations and Callings", error.Message, StringComparison.Ordinal);
+        Assert.Contains("Member List", error.Message, StringComparison.Ordinal);
+
+        // The names are listed with commas, not joined on "and": one of the reports is
+        // called Organizations and Callings, and "and" between every pair reads as four
+        // reports rather than three.
+        Assert.Contains(
+            "the Single Adults report, the Organizations and Callings report and the Member List report",
+            error.Message, StringComparison.Ordinal);
     }
 
     [Fact]
