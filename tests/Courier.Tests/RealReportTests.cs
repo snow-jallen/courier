@@ -31,9 +31,9 @@ public sealed class RealReportTests(ITestOutputHelper output)
         output.WriteLine($"no email    {report.Rows.Count(r => r.Email.Length == 0)}");
         output.WriteLine($"no phone    {report.Rows.Count(r => r.Phone.Length == 0)}");
         foreach (var r in report.Rows.Where(r => r.Phone.Length > 0 && !phone.IsMatch(r.Phone)).Take(5))
-            output.WriteLine($"  PHONE {r.Name} = '{r.Phone}'");
+            output.WriteLine($"  PHONE '{r.Phone}'");
         foreach (var r in report.Rows.Where(r => r.Email.Length > 0 && !email.IsMatch(r.Email)).Take(5))
-            output.WriteLine($"  EMAIL {r.Name} = '{r.Email}'");
+            output.WriteLine($"  EMAIL '{r.Email}'");
 
         Assert.Equal(29, report.PageCount);
 
@@ -52,10 +52,13 @@ public sealed class RealReportTests(ITestOutputHelper output)
         var report = LcrReportParser.Parse(TestPaths.RealReport!);
         var unsnapped = report.Rows.Where(r => Wards.Snap(r.Unit) is null).ToList();
 
-        foreach (var r in unsnapped.Take(10)) output.WriteLine($"  UNIT {r.Name} = '{r.Unit}'");
+        foreach (var r in unsnapped.Take(10)) output.WriteLine($"  UNIT '{r.Unit}'");
         output.WriteLine($"distinct raw units: {report.Rows.Select(r => r.Unit).Distinct().Count()}");
 
-        Assert.Empty(unsnapped);
+        // Assert.Empty(unsnapped) would dump every unsnapped LcrRow's name, address,
+        // e-mail and phone on failure; Assert.True with a count keeps a failure to a
+        // number, same as the Organizations and Callings version of this test.
+        Assert.True(unsnapped.Count == 0, $"{unsnapped.Count} rows had a unit that did not snap to a known ward");
     }
 
     [RequiresRealReport]
@@ -66,8 +69,12 @@ public sealed class RealReportTests(ITestOutputHelper output)
             .Where(r => r.Name.Split(',', StringSplitOptions.TrimEntries).Length != 2
                      || r.Name.Split(',', StringSplitOptions.TrimEntries).Any(p => p.Length == 0))
             .ToList();
-        foreach (var r in malformed.Take(10)) output.WriteLine($"  NAME '{r.Name}'");
-        Assert.Empty(malformed);
+        // The name itself is the thing under test here, so it cannot be printed
+        // without printing a person; the part count is enough to see the shape of
+        // the failure without it.
+        foreach (var r in malformed.Take(10))
+            output.WriteLine($"  NAME shape: {r.Name.Split(',', StringSplitOptions.TrimEntries).Length} part(s)");
+        Assert.True(malformed.Count == 0, $"{malformed.Count} names were not 'Surname, Given'");
     }
 }
 
@@ -113,7 +120,10 @@ public sealed class RealImportTests(ITestOutputHelper output) : IDisposable
         var (report, plan) = await service.PrepareAsync(TestPaths.RealReport!);
         output.WriteLine($"first run: {plan.Added.Count} added, {plan.Warnings.Count} warnings");
         Assert.Equal(427, plan.Added.Count);
-        Assert.Empty(plan.Deactivated);
+        // Assert.Empty(plan.Deactivated) would dump every deactivated PersonUpdate's
+        // name and contact details on failure; Assert.True with a count keeps a
+        // failure to a number.
+        Assert.True(plan.Deactivated.Count == 0, $"{plan.Deactivated.Count} deactivated when none were expected");
 
         var run = await service.ApplyAsync(report, plan, new DateOnly(2026, 9, 16));
         Assert.Equal(427, run.AddedCount);
@@ -128,8 +138,10 @@ public sealed class RealImportTests(ITestOutputHelper output) : IDisposable
         Assert.True(withEmail > 200, $"only {withEmail} people got an email address");
 
         // Every phone Courier would dial must be in the form Twilio accepts.
-        Assert.All(people.Where(p => p.Phone is not null),
-            p => Assert.Matches(@"^\+1\d{10}$", p.Phone!));
+        // Assert.All would print the offending Recipient (name, ward, phone and all)
+        // on failure; a count keeps a failure to a number.
+        var twilioShape = new Regex(@"^\+1\d{10}$");
+        Assert.Equal(0, people.Count(p => p.Phone is not null && !twilioShape.IsMatch(p.Phone)));
 
         // Importing the very same file again must change nothing at all. This is the
         // check that matters most: the app re-imports every week.
@@ -137,9 +149,11 @@ public sealed class RealImportTests(ITestOutputHelper output) : IDisposable
         output.WriteLine($"second run: {secondPlan.Added.Count} added, {secondPlan.Updated.Count} updated, " +
                          $"{secondPlan.Deactivated.Count} deactivated, {secondPlan.Unchanged} unchanged");
 
-        Assert.Empty(secondPlan.Added);
-        Assert.Empty(secondPlan.Updated);
-        Assert.Empty(secondPlan.Deactivated);
+        // Same reasoning as above: Assert.Empty on these would dump the offending
+        // PersonUpdate/NormalizedPerson records, names and contact details included.
+        Assert.True(secondPlan.Added.Count == 0, $"{secondPlan.Added.Count} added on a re-import that should change nothing");
+        Assert.True(secondPlan.Updated.Count == 0, $"{secondPlan.Updated.Count} updated on a re-import that should change nothing");
+        Assert.True(secondPlan.Deactivated.Count == 0, $"{secondPlan.Deactivated.Count} deactivated on a re-import that should change nothing");
         Assert.Equal(427, secondPlan.Unchanged);
         Assert.Equal(secondReport.Sha256, report.Sha256);
     }
