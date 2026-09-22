@@ -73,9 +73,6 @@ public sealed class UserInterfaceTests : IDisposable
         control is Control { IsVisible: true }
         && control.GetVisualAncestors().OfType<Control>().All(a => a.IsVisible);
 
-    private static readonly Lazy<HeadlessUnitTestSession> Session = new(() =>
-        HeadlessUnitTestSession.StartNew(typeof(HeadlessApp)));
-
     private static Task InWindow(
         Func<MainWindow, MainWindowViewModel, Task> body, string folder, IUpdates? updates = null)
     {
@@ -102,7 +99,7 @@ public sealed class UserInterfaceTests : IDisposable
             await body(window, model);
             return 0;
         };
-        return Session.Value.Dispatch(action, CancellationToken.None);
+        return HeadlessApp.Session.Value.Dispatch(action, CancellationToken.None);
     }
 
     [Fact]

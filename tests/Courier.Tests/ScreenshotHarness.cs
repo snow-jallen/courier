@@ -23,14 +23,11 @@ public sealed class ScreenshotHarness(ITestOutputHelper output) : IDisposable
     private readonly string _folder =
         Path.Combine(TestPaths.RepoRoot ?? Path.GetTempPath(), ".screenshots");
 
-    private static readonly Lazy<HeadlessUnitTestSession> Session =
-        new(() => HeadlessUnitTestSession.StartNew(typeof(RenderingApp)));
-
     private sealed class NoFiles : IFilePicker { public Task<string?> PickPdfAsync() => Task.FromResult<string?>(null); }
     private sealed class NoClipboard : IClipboardWriter { public Task CopyAsync(string t) => Task.CompletedTask; }
 
     [Fact]
-    public Task Photograph_every_screen() => Session.Value.Dispatch(async () =>
+    public Task Photograph_every_screen() => HeadlessApp.Session.Value.Dispatch(async () =>
     {
         if (Directory.Exists(_folder)) Directory.Delete(_folder, recursive: true);
         Directory.CreateDirectory(_folder);
@@ -105,12 +102,4 @@ public sealed class ScreenshotHarness(ITestOutputHelper output) : IDisposable
     }
 
     public void Dispose() { }
-}
-
-public static class RenderingApp
-{
-    public static AppBuilder BuildAvaloniaApp() =>
-        AppBuilder.Configure<Courier.App.App>()
-            .UseSkia()
-            .UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false });
 }
