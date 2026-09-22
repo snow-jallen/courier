@@ -26,7 +26,10 @@ Keep that copy blunt and specific; it is a feature, not boilerplate.
 - An import owns **the fields its report prints** — ward, age, birthday, address, and
   the printed e-mail and phone. A report with no column for a field has said nothing
   about it and must not blank it; a report that prints the column and leaves it blank
-  does clear it. Formats declare this as `ReportFields Carries`.
+  does clear it. A column printed but never filled for anyone is a third case, and it's
+  left out of `Carries` on the format author's judgment — Organizations and Callings
+  maps an Age column but excludes it, because a column empty on every row has never
+  actually said anything. Formats declare this as `ReportFields Carries`.
 - Courier owns preferred channel, notes, and hand-added contact details. **An import
   must never write to these.** Tests enforce it; keep them.
 - Nobody is deleted. Falling out of an export is a soft delete (`IsActive`,

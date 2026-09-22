@@ -102,7 +102,11 @@ directory's addresses because the user reached for the other report is not a tra
 anyone would make. So a format declares what it prints, `ImportPlanner` diffs only
 those fields, `ImportService` writes only those fields, and the Import screen says
 which report was read and what it leaves out. A field the report printed and left
-blank is still cleared — the report said something about it.
+blank is still cleared — the report said something about it. A field printed but empty
+on every row is a third case, and a judgment the format's author makes rather than a
+rule the reader can apply on its own: Organizations and Callings maps an Age column but
+leaves it out of `Carries`, because a column that is never once filled has never
+actually said anything, unlike one that's blank for some people and filled for others.
 
 Nobody is ever deleted. Falling out of an export sets `IsActive = false` and
 `DeactivatedOn`; reappearing clears both and keeps the original `FirstSeenOn`, the
