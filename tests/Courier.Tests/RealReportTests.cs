@@ -199,8 +199,9 @@ public sealed class RealCallingsReportTests(ITestOutputHelper output)
     {
         var report = LcrReportParser.Parse(TestPaths.RealCallingsReport!);
 
-        Assert.All(report.Rows, r => Assert.Equal("", r.Address));
-        Assert.All(report.Rows, r => Assert.Equal("", r.Age));
+        Assert.Equal(428, report.Rows.Count);
+        Assert.Equal(0, report.Rows.Count(r => r.Address.Length > 0));
+        Assert.Equal(0, report.Rows.Count(r => r.Age.Length > 0));
         Assert.False(report.Source.Carry(ReportFields.Address));
         Assert.False(report.Source.Carry(ReportFields.Age));
     }
@@ -211,16 +212,21 @@ public sealed class RealCallingsReportTests(ITestOutputHelper output)
         // Page 1 prints the stake's Single Adult callings above the members table,
         // including rows reading "Calling Vacant" and names with no contact details.
         var report = LcrReportParser.Parse(TestPaths.RealCallingsReport!);
-        Assert.DoesNotContain(report.Rows, r => r.Name.Contains("Vacant", StringComparison.Ordinal));
-        Assert.All(report.Rows, r => Assert.Contains(',', r.Name));
+        Assert.Equal(428, report.Rows.Count);
+        Assert.Equal(0, report.Rows.Count(r => r.Name.Contains("Vacant", StringComparison.Ordinal)));
+        Assert.Equal(0, report.Rows.Count(r => !r.Name.Contains(',')));
     }
 
     [RequiresRealCallingsReport]
     public void Every_unit_snaps_onto_a_known_ward()
     {
         var report = LcrReportParser.Parse(TestPaths.RealCallingsReport!);
-        var unsnapped = report.Rows.Where(r => Wards.Snap(r.Unit) is null).ToList();
-        foreach (var r in unsnapped.Take(10)) output.WriteLine($"  UNIT '{r.Unit}'");
+        Assert.Equal(428, report.Rows.Count);
+
+        // The unit itself identifies nobody, so it is safe to show on failure — unlike
+        // the row, which would also carry the person's name and contact details.
+        var unsnapped = report.Rows.Select(r => r.Unit).Distinct().Where(u => Wards.Snap(u) is null).ToList();
+        foreach (var u in unsnapped.Take(10)) output.WriteLine($"  UNIT '{u}'");
         Assert.Empty(unsnapped);
     }
 }
@@ -249,7 +255,10 @@ public sealed class RealCallingsImportTests(ITestOutputHelper output) : IDisposa
         output.WriteLine($"note: {string.Join(" ", plan.Notes)}");
 
         Assert.Equal(428, plan.Added.Count);
-        Assert.Empty(plan.Deactivated);
+        // Assert.Empty(plan.Deactivated) would dump every deactivated PersonUpdate's
+        // name and contact details on failure; Assert.True with a count keeps a
+        // failure to a number.
+        Assert.True(plan.Deactivated.Count == 0, $"{plan.Deactivated.Count} deactivated when none were expected");
         Assert.Contains(plan.Notes, n => n.Contains("Organizations and Callings", StringComparison.Ordinal));
 
         var run = await service.ApplyAsync(report, plan, new DateOnly(2026, 9, 21));
@@ -264,16 +273,18 @@ public sealed class RealCallingsImportTests(ITestOutputHelper output) : IDisposa
         Assert.True(withPhone > 300, $"only {withPhone} people got a usable phone number");
         Assert.True(withEmail > 200, $"only {withEmail} people got an email address");
 
-        Assert.All(people.Where(p => p.Phone is not null),
-            p => Assert.Matches(@"^\+1\d{10}$", p.Phone!));
+        var twilioShape = new Regex(@"^\+1\d{10}$");
+        Assert.Equal(0, people.Count(p => p.Phone is not null && !twilioShape.IsMatch(p.Phone)));
 
         var (_, second) = await service.PrepareAsync(TestPaths.RealCallingsReport!);
         output.WriteLine($"second run: {second.Added.Count} added, {second.Updated.Count} updated, " +
                          $"{second.Deactivated.Count} deactivated, {second.Unchanged} unchanged");
 
-        Assert.Empty(second.Added);
-        Assert.Empty(second.Updated);
-        Assert.Empty(second.Deactivated);
+        // Same reasoning as above: Assert.Empty on these would dump the offending
+        // PersonUpdate/NormalizedPerson records, names and contact details included.
+        Assert.True(second.Added.Count == 0, $"{second.Added.Count} added on a re-import that should change nothing");
+        Assert.True(second.Updated.Count == 0, $"{second.Updated.Count} updated on a re-import that should change nothing");
+        Assert.True(second.Deactivated.Count == 0, $"{second.Deactivated.Count} deactivated on a re-import that should change nothing");
         Assert.Equal(428, second.Unchanged);
     }
 
