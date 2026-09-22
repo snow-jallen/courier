@@ -19,26 +19,30 @@
 
       <!-- Who gets this -->
       <Grid Grid.Column="0" RowDefinitions="Auto,Auto,*,Auto">
-        <!-- Filters -->
-        <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto" ColumnSpacing="8" Margin="0,0,0,10">
-          <TextBox Grid.Column="0" MinWidth="180" PlaceholderText="Search a name, email, phone or note"
-                   Text="{Binding Search}"/>
-          <ComboBox Grid.Column="1" MinWidth="150" ItemsSource="{Binding WardOptions}"
-                    SelectedItem="{Binding Ward}"/>
-          <ComboBox Grid.Column="2" MinWidth="140" ItemsSource="{Binding ChannelOptions}"
-                    SelectedItem="{Binding Channel}"/>
-          <ComboBox Grid.Column="3" MinWidth="120" ItemsSource="{Binding MonthOptions}"
-                    SelectedItem="{Binding BirthdayMonth}"/>
-          <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
-            <TextBlock Text="Age" VerticalAlignment="Center" FontSize="12.5"
-                       Foreground="{DynamicResource Ink2}"/>
-            <TextBox Width="56" Text="{Binding MinAge}" PlaceholderText="any"/>
-            <TextBlock Text="to" VerticalAlignment="Center" FontSize="12.5"
-                       Foreground="{DynamicResource Ink2}"/>
-            <TextBox Width="56" Text="{Binding MaxAge}" PlaceholderText="any"/>
-          </StackPanel>
-          <Button Grid.Column="5" Content="Clear" Command="{Binding ClearFiltersCommand}"/>
-        </Grid>
+        <!-- Filters. Search on its own line and the rest wrapping, because a single
+             row of six controls runs out of width and pushes the search box off the
+             left edge of the screen. -->
+        <StackPanel Grid.Row="0" Spacing="8" Margin="0,0,0,10">
+          <TextBox Text="{Binding Search}"
+                   PlaceholderText="Search a name, email, phone or note"/>
+          <WrapPanel Orientation="Horizontal" ItemSpacing="8" LineSpacing="8">
+            <ComboBox MinWidth="150" ItemsSource="{Binding WardOptions}"
+                      SelectedItem="{Binding Ward}"/>
+            <ComboBox MinWidth="140" ItemsSource="{Binding ChannelOptions}"
+                      SelectedItem="{Binding Channel}"/>
+            <ComboBox MinWidth="120" ItemsSource="{Binding MonthOptions}"
+                      SelectedItem="{Binding BirthdayMonth}"/>
+            <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+              <TextBlock Text="Age" VerticalAlignment="Center" FontSize="12.5"
+                         Foreground="{DynamicResource Ink2}"/>
+              <TextBox Width="56" Text="{Binding MinAge}" PlaceholderText="any"/>
+              <TextBlock Text="to" VerticalAlignment="Center" FontSize="12.5"
+                         Foreground="{DynamicResource Ink2}"/>
+              <TextBox Width="56" Text="{Binding MaxAge}" PlaceholderText="any"/>
+            </StackPanel>
+            <Button Content="Clear" Command="{Binding ClearFiltersCommand}"/>
+          </WrapPanel>
+        </StackPanel>
 
         <!-- Selection bar + list -->
         <Border Grid.Row="1" Background="{DynamicResource AccentSoft}" CornerRadius="9,9,0,0" Padding="13,9"
@@ -63,7 +67,7 @@
         <Border Grid.Row="2" Classes="card" CornerRadius="0,0,9,9" Padding="0" ClipToBounds="True">
           <Grid RowDefinitions="Auto,*">
             <Border Grid.Row="0" Classes="header">
-              <Grid ColumnDefinitions="36,2*,1.4*,0.5*,0.8*,0.8*,2*">
+              <Grid ColumnDefinitions="36,1.7*,1.1*,0.45*,0.75*,Auto,2.4*">
                 <TextBlock Grid.Column="0" Classes="colhead" Text=""/>
                 <Button Grid.Column="1" Classes="sortable" Content="NAME"
                         Command="{Binding SortByCommand}" CommandParameter="name"/>
@@ -73,7 +77,10 @@
                         Command="{Binding SortByCommand}" CommandParameter="age"/>
                 <Button Grid.Column="4" Classes="sortable" Content="BIRTHDAY"
                         Command="{Binding SortByCommand}" CommandParameter="birthday"/>
-                <Button Grid.Column="5" Classes="sortable" Content="PREFERS"
+                <!-- Same width and margin as the chips below, so this Auto column and
+                     that one come out the same and the labels sit over their columns. -->
+                <Button Grid.Column="5" Classes="sortable" Content="SEND BY"
+                        Width="168" Margin="0,0,18,0"
                         Command="{Binding SortByCommand}" CommandParameter="channel"/>
                 <TextBlock Grid.Column="6" Classes="colhead" Text="GOES TO"/>
               </Grid>
@@ -84,7 +91,7 @@
                 <ItemsControl.ItemTemplate>
                   <DataTemplate x:DataType="vm:SendRow">
                     <Border Classes="row">
-                      <Grid ColumnDefinitions="36,2*,1.4*,0.5*,0.8*,Auto,2*">
+                      <Grid ColumnDefinitions="36,1.7*,1.1*,0.45*,0.75*,Auto,2.4*">
                         <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected}" VerticalAlignment="Center"/>
                         <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
                           <TextBlock Text="{Binding Name}" FontWeight="SemiBold"

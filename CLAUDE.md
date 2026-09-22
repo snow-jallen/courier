@@ -77,6 +77,14 @@ Pure logic lives in `Core` with tests. Views do not compute.
   There is a test that a failed send leaks none of it — keep it.
 - Log what was done and what failed, not what was typed.
 
+## Seeing the app
+
+`dotnet test --filter ScreenshotHarness` writes a picture of every screen into
+`.screenshots/`. Look at them after changing any layout: a window that lays out wrongly
+still passes every assertion anybody thinks to write about it, and this has already
+caught clipped columns, a control overflowing off the screen and a header whose columns
+did not line up with its rows.
+
 ## Before committing
 
 `dotnet test` — about 130 tests, a second or so. Warnings are errors.

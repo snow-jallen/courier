@@ -11,7 +11,10 @@
     <Setter Property="FontSize" Value="13"/>
     <Setter Property="Foreground" Value="{DynamicResource Ink3}"/>
     <Setter Property="TextWrapping" Value="Wrap"/>
-    <Setter Property="MaxWidth" Value="560"/>
+    <Setter Property="MaxWidth" Value="620"/>
+    <!-- A MaxWidth on a stretched element centres it, which put every subtitle in the
+         middle of the screen rather than under the heading it belongs to. -->
+    <Setter Property="HorizontalAlignment" Value="Left"/>
   </Style>
   <Style Selector="TextBlock.eyebrow">
     <Setter Property="FontSize" Value="11"/>

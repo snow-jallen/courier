@@ -11,6 +11,9 @@ tests/Courier.Tests/Fixtures/private/
 *.db-wal
 settings.json
 
+# Pictures of each screen, written by the screenshot harness for looking at.
+.screenshots/
+
 # Isolated worktrees and the subagent-driven-development scratch workspace.
 .claude/worktrees/
 .superpowers/
