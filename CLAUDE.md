@@ -26,10 +26,15 @@ Keep that copy blunt and specific; it is a feature, not boilerplate.
 - An import owns **the fields its report prints** — ward, age, birthday, address, and
   the printed e-mail and phone. A report with no column for a field has said nothing
   about it and must not blank it; a report that prints the column and leaves it blank
-  does clear it. A column printed but never filled for anyone is a third case, and it's
+  does clear it. A column printed but hardly ever filled is a third case, and it's
   left out of `Carries` on the format author's judgment — Organizations and Callings
   maps an Age column but excludes it, because a column empty on every row has never
-  actually said anything. Formats declare this as `ReportFields Carries`.
+  actually said anything, and Member List excludes its own because it is filled on 2
+  rows of 160 and carrying it would blank the other 158. Formats declare this as
+  `ReportFields Carries`.
+- Registry **order is load-bearing**: first match wins, and Member List's columns are a
+  subset of Organizations and Callings'. A new format goes after every report whose
+  heading it is a subset of.
 - Courier owns preferred channel, notes, and hand-added contact details. **An import
   must never write to these.** Tests enforce it; keep them.
 - Nobody is deleted. Falling out of an export is a soft delete (`IsActive`,

@@ -8,9 +8,11 @@ Built for one person on one computer, with no server and no account to sign into
 
 ## What it does
 
-1. **Import.** Drop in the Single Adults report exported from LCR as a PDF. Courier
-   reads it, compares it against what it already holds, and shows exactly what would
-   change before anything is written. People who drop out of an export are marked
+1. **Import.** Drop in a report exported from LCR as a PDF — Single Adults,
+   Organizations and Callings, or a ward's Member List. Courier works out which one it
+   is, compares it against what it already holds, and shows exactly what would change
+   before anything is written, including which fields that particular report does not
+   carry and therefore leaves alone. People who drop out of an export are marked
    inactive, never deleted.
 2. **Keep.** Add people the export does not carry, and correct anyone's email, phone
    or address on the People screen. Somebody added by hand is never removed by an

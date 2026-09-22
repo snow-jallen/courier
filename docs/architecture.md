@@ -37,21 +37,29 @@ Two measured facts drive `PdfTableReader`, and both hold for every report seen s
 
 ### One reader, several reports
 
-Courier reads two reports today and the list is meant to grow, so everything that
+Courier reads three reports today and the list is meant to grow, so everything that
 differs between them lives in a format rather than in the parser. A format states the
 phrases that name its columns and the order they come in, the row-break factor above,
 the lines that are page furniture, and which fields it actually prints.
 
 `LcrReportParser` offers each page to every registered format; the first to recognise
-a heading drives the rest of the document. `ReportFormats` holds the registry and both
-descriptors. A third report of the same shape — a table whose own headings give the
-column positions — is a short record. One of a different shape implements
+a heading drives the rest of the document. `ReportFormats` holds the registry and all
+three descriptors. A fourth report of the same shape — a table whose own headings give
+the column positions — is a short record. One of a different shape implements
 `IReportFormat` and shares only `PdfTableReader`.
 
     Single Adults                 8.9pt text, rows 2.6x apart, wraps 1.44x
                                   name, email, phone, unit, age, birthday, address
     Organizations and Callings    8.0pt text, rows 1.68x apart, wraps 0.56x
                                   name, gender, age, birth date, phone, email, unit
+    Member List                   9.0pt text, rows 2.11x apart, wraps 0.68x
+                                  name, gender, age, birth date, phone, email
+
+**The order of the registry is load-bearing**, which it was not while there were two.
+Member List's columns are a subset of the Organizations and Callings members table's —
+the same six words, in the same order — so offered such a file first it would claim it
+and read every ward as blank. It is registered last, and a test says so. A new
+descriptor goes after every report whose heading it is a subset of.
 
 Details that each cost a debugging session:
 
@@ -74,6 +82,10 @@ Details that each cost a debugging session:
 * A column may be found and its contents **discarded**. Organizations and Callings
   prints Gender between the name and the age. Courier has no use for it, but without an
   edge there the `F` joins the name and everyone reads "Ashdown, Marigold F".
+* The lines a cell wrapped over are rejoined **with a space, except an e-mail address**,
+  whose halves are joined with nothing. "812 North 700" and "East" are two words of one
+  address; the Member List wraps a long e-mail mid-address, and a space put back between
+  the halves makes something that looks fine on screen right up until the send fails.
 
 A PDF that no format recognises fails loudly with `LcrReportException`, naming the
 reports Courier does know, rather than importing nonsense.
@@ -102,11 +114,21 @@ directory's addresses because the user reached for the other report is not a tra
 anyone would make. So a format declares what it prints, `ImportPlanner` diffs only
 those fields, `ImportService` writes only those fields, and the Import screen says
 which report was read and what it leaves out. A field the report printed and left
-blank is still cleared — the report said something about it. A field printed but empty
-on every row is a third case, and a judgment the format's author makes rather than a
-rule the reader can apply on its own: Organizations and Callings maps an Age column but
-leaves it out of `Carries`, because a column that is never once filled has never
-actually said anything, unlike one that's blank for some people and filled for others.
+blank is still cleared — the report said something about it. A field printed but hardly
+ever filled is a third case, and a judgment the format's author makes rather than a rule
+the reader can apply on its own. Both of the other reports map an Age column and leave
+it out of `Carries`, for two different reasons: Organizations and Callings never fills
+its Age column at all, and a column that is never once filled has never actually said
+anything; the Member List does fill its own, but on 2 rows of 160, so carrying it would
+blank 158 recorded ages to honour 2. Neither is the same as a column that is blank for
+some people and filled for most, which is carried and does clear.
+
+A report can also print a field somewhere no column can reach. The Member List covers
+one ward and names it once, in the page header above the table. That is not a column, so
+the format maps no unit and leaves `Unit` out of `Carries`: importing one says nothing
+about anyone's ward rather than blanking it. `ImportPlanner` also holds back its
+unrecognised-unit warning for such a report — every person on a Member List has no unit,
+and naming five of them on every import says nothing anyone can act on.
 
 Nobody is ever deleted. Falling out of an export sets `IsActive = false` and
 `DeactivatedOn`; reappearing clears both and keeps the original `FirstSeenOn`, the
