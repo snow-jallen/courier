@@ -17,7 +17,7 @@ public sealed class TextRouteTests : IDisposable
     {
         Directory.CreateDirectory(_folder);
         _store = new SettingsStore(Path.Combine(_folder, "settings.json"));
-        _services = AppServices.Start(Path.Combine(_folder, "contacts.db"));
+        _services = AppServices.Start(Path.Combine(_folder, "contacts.db"), Path.Combine(_folder, "settings.json"));
     }
 
     private SetupViewModel Setup(bool isMac) => new(_services, _store, isMac);

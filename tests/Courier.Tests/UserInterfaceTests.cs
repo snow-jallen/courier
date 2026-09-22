@@ -325,7 +325,7 @@ public sealed class UserInterfaceTests : IDisposable
     public Task A_person_can_be_corrected_and_the_correction_reaches_the_lcr_list() =>
         InWindow(async (_, model) =>
         {
-            await SeedOneAsync(AppServices.Start(Path.Combine(_folder, "contacts.db")));
+            await SeedOneAsync(AppServices.Start(Path.Combine(_folder, "contacts.db"), Path.Combine(_folder, "settings.json")));
 
             await model.ShowPeopleAsync();
             var people = (PeopleViewModel)model.Current;
@@ -361,7 +361,7 @@ public sealed class UserInterfaceTests : IDisposable
     public Task Choosing_a_channel_for_everyone_overrides_what_each_person_picked() =>
         InWindow(async (_, model) =>
         {
-            await SeedOneAsync(AppServices.Start(Path.Combine(_folder, "contacts.db")));
+            await SeedOneAsync(AppServices.Start(Path.Combine(_folder, "contacts.db"), Path.Combine(_folder, "settings.json")));
 
             await model.ShowSendAsync();
             var send = (SendViewModel)model.Current;
@@ -467,7 +467,7 @@ public sealed class UserInterfaceTests : IDisposable
     public Task Numbers_and_notes_are_shown_the_way_people_read_them() =>
         InWindow(async (_, model) =>
         {
-            var services = AppServices.Start(Path.Combine(_folder, "contacts.db"));
+            var services = AppServices.Start(Path.Combine(_folder, "contacts.db"), Path.Combine(_folder, "settings.json"));
             var id = await SeedOneAsync(services);
             await using (var db = services.Db())
             {
@@ -503,7 +503,7 @@ public sealed class UserInterfaceTests : IDisposable
     public Task Double_clicking_a_row_opens_the_edit_pane() =>
         InWindow(async (window, model) =>
         {
-            await SeedOneAsync(AppServices.Start(Path.Combine(_folder, "contacts.db")));
+            await SeedOneAsync(AppServices.Start(Path.Combine(_folder, "contacts.db"), Path.Combine(_folder, "settings.json")));
             await model.ShowPeopleAsync();
             var people = (PeopleViewModel)model.Current;
             Resize(window, 1200, 800);
