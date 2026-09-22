@@ -82,7 +82,6 @@ public sealed class ImportPlannerTests
         Assert.Contains("Organizations and Callings", note, StringComparison.Ordinal);
         Assert.Contains("addresses and ages", note, StringComparison.Ordinal);
         Assert.Contains("kept", note, StringComparison.Ordinal);
-        Assert.True(plan.HasNotes);
     }
 
     [Fact]

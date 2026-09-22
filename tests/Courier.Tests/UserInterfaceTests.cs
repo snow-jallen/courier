@@ -79,8 +79,15 @@ public sealed class UserInterfaceTests : IDisposable
 
         // The notes strip lives inside the grid that only appears once a file is open.
         import.HasFile = true;
-        import.Notes.Add("Read as Organizations and Callings. This report does not list " +
-                         "addresses and ages, so the ones already recorded are kept.");
+
+        // Get the note from the planner itself rather than typing it here, so this
+        // test still fails if ImportPlanner.Notes changes its wording without the
+        // screen changing to match.
+        var callings = new Courier.Core.Import.ReportSource("Organizations and Callings",
+            Courier.Core.Import.ReportFields.Unit | Courier.Core.Import.ReportFields.Birthday |
+            Courier.Core.Import.ReportFields.Email | Courier.Core.Import.ReportFields.Phone);
+        var plan = Courier.Core.Import.ImportPlanner.Plan([], [], callings);
+        foreach (var n in plan.Notes) import.Notes.Add(n);
         Assert.True(import.HasNotes);
 
         // Render it. A note that binds but never appears is the failure worth catching.
@@ -88,10 +95,18 @@ public sealed class UserInterfaceTests : IDisposable
         window.Measure(window.ClientSize);
         window.Arrange(new Rect(window.ClientSize));
 
-        Assert.Contains(
+        var note = plan.Notes[0];
+        var fragment = note[(note.IndexOf(". ", StringComparison.Ordinal) + 2)..];
+        var textBlock = Assert.Single(
             window.GetVisualDescendants().OfType<TextBlock>(),
-            t => t.Text is not null
-              && t.Text.Contains("the ones already recorded are kept", StringComparison.Ordinal));
+            t => t.Text is not null && t.Text.Contains(fragment, StringComparison.Ordinal));
+
+        // Notes are not warnings, and nothing pinned that before: the note's Border
+        // must carry only the plain "notice" class, never "caution" (which is what
+        // the Warnings strip, right below it in the same XAML, uses).
+        var border = textBlock.GetVisualAncestors().OfType<Border>().First(b => b.Classes.Contains("notice"));
+        Assert.False(border.Classes.Contains("caution"),
+            "the note's Border carries the caution class, so it would read as a warning");
 
         return Task.CompletedTask;
     }, _folder);
