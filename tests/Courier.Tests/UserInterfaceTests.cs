@@ -31,10 +31,46 @@ public sealed class UserInterfaceTests : IDisposable
         public Task CopyAsync(string text) => Task.CompletedTask;
     }
 
+    /// <summary>Stands in for GitHub. The real one reaches the network, which a test
+    /// must not do — and a check that quietly succeeded because the machine was
+    /// offline would prove nothing.</summary>
+    private sealed class FakeUpdates : IUpdates
+    {
+        public bool Installed { get; init; } = true;
+
+        /// <summary>The version GitHub is pretending to offer; null means up to date.</summary>
+        public string? Offers { get; init; }
+
+        public Exception? Fails { get; init; }
+
+        public int Checks { get; private set; }
+        public int Downloads { get; private set; }
+        public int Restarts { get; private set; }
+
+        public Task<UpdateState> CheckAsync()
+        {
+            Checks++;
+            if (Fails is not null) throw Fails;
+            return Task.FromResult(Offers is null
+                ? new UpdateState("Courier is up to date.")
+                : new UpdateState($"Version {Offers} is available.", Version: Offers));
+        }
+
+        public Task<UpdateState> DownloadAsync(IProgress<int>? progress = null)
+        {
+            Downloads++;
+            if (Fails is not null) throw Fails;
+            return Task.FromResult(new UpdateState($"Version {Offers} is ready.", UpdateReady: true, Version: Offers));
+        }
+
+        public void ApplyAndRestart() => Restarts++;
+    }
+
     private static readonly Lazy<HeadlessUnitTestSession> Session = new(() =>
         HeadlessUnitTestSession.StartNew(typeof(HeadlessApp)));
 
-    private static Task InWindow(Func<MainWindow, MainWindowViewModel, Task> body, string folder)
+    private static Task InWindow(
+        Func<MainWindow, MainWindowViewModel, Task> body, string folder, IUpdates? updates = null)
     {
         // Dispatch has three overloads: Action, Func<TResult>, and Func<Task<TResult>>. An
         // async lambda with no return value has natural type Func<Task>, which binds to the
@@ -52,7 +88,7 @@ public sealed class UserInterfaceTests : IDisposable
             var services = AppServices.Start(
                 Path.Combine(folder, "contacts.db"),
                 Path.Combine(folder, "settings.json"));
-            var window = new MainWindow(services);
+            var window = new MainWindow(services, updates);
             window.Show();
 
             var model = (MainWindowViewModel)window.DataContext!;
@@ -66,7 +102,17 @@ public sealed class UserInterfaceTests : IDisposable
     public Task The_window_opens_on_the_import_screen() => InWindow((window, model) =>
     {
         Assert.IsType<ImportViewModel>(model.Current);
-        Assert.Equal("Courier", window.Title);
+        Assert.StartsWith("Courier", window.Title, StringComparison.Ordinal);
+        return Task.CompletedTask;
+    }, _folder);
+
+    [Fact]
+    public Task The_title_bar_names_the_running_version() => InWindow((window, _) =>
+    {
+        // Under `dotnet test` the entry assembly is the test host, so the number is
+        // whatever that happens to be. The shape is the thing worth pinning: three
+        // parts, matching how the releases are named, not the four-part assembly form.
+        Assert.Matches(@"^Courier \(v\d+\.\d+\.\d+\)$", window.Title);
         return Task.CompletedTask;
     }, _folder);
 
@@ -110,6 +156,101 @@ public sealed class UserInterfaceTests : IDisposable
 
         return Task.CompletedTask;
     }, _folder);
+
+    [Fact]
+    public Task An_update_found_at_startup_is_fetched_and_offers_a_restart()
+    {
+        var github = new FakeUpdates { Offers = "1.0.9" };
+        return InWindow(async (window, model) =>
+        {
+            await model.CheckForUpdateAsync();
+
+            Assert.Equal(1, github.Checks);
+            Assert.Equal(1, github.Downloads);
+            Assert.True(model.UpdateReady);
+
+            // It has to actually reach the rail, not just the view model.
+            Dispatcher.UIThread.RunJobs();
+            window.Measure(window.ClientSize);
+            window.Arrange(new Rect(window.ClientSize));
+
+            var button = Assert.Single(
+                window.GetVisualDescendants().OfType<Button>(),
+                b => b.Content as string == "Restart to apply update");
+            Assert.True(button.IsVisible);
+        }, _folder, github);
+    }
+
+    [Fact]
+    public Task Nothing_newer_leaves_the_rail_alone()
+    {
+        var github = new FakeUpdates { Offers = null };
+        return InWindow(async (window, model) =>
+        {
+            await model.CheckForUpdateAsync();
+
+            Assert.Equal(1, github.Checks);
+            Assert.Equal(0, github.Downloads);
+            Assert.False(model.UpdateReady);
+
+            Dispatcher.UIThread.RunJobs();
+            window.Measure(window.ClientSize);
+            window.Arrange(new Rect(window.ClientSize));
+
+            Assert.DoesNotContain(
+                window.GetVisualDescendants().OfType<Button>(),
+                b => b.Content as string == "Restart to apply update" && b.IsVisible);
+        }, _folder, github);
+    }
+
+    [Fact]
+    public Task A_copy_run_from_a_build_folder_never_looks_for_an_update()
+    {
+        // Velopack can only replace an installed copy, so asking GitHub would spend a
+        // round trip to be told something it already knows.
+        var github = new FakeUpdates { Installed = false, Offers = "1.0.9" };
+        return InWindow(async (_, model) =>
+        {
+            await model.CheckForUpdateAsync();
+
+            Assert.Equal(0, github.Checks);
+            Assert.False(model.UpdateReady);
+        }, _folder, github);
+    }
+
+    [Fact]
+    public Task An_update_check_that_fails_says_nothing_at_all()
+    {
+        // Nobody asked for this check, so an error about GitHub at start-up would be
+        // noise about something the user was not doing.
+        var github = new FakeUpdates { Offers = "1.0.9", Fails = new HttpRequestException("no network") };
+        return InWindow(async (window, model) =>
+        {
+            await model.CheckForUpdateAsync();
+
+            Assert.False(model.UpdateReady);
+
+            Dispatcher.UIThread.RunJobs();
+            window.Measure(window.ClientSize);
+            window.Arrange(new Rect(window.ClientSize));
+
+            Assert.DoesNotContain(
+                window.GetVisualDescendants().OfType<Button>(),
+                b => b.Content as string == "Restart to apply update" && b.IsVisible);
+        }, _folder, github);
+    }
+
+    [Fact]
+    public Task Restarting_from_the_rail_applies_the_update()
+    {
+        var github = new FakeUpdates { Offers = "1.0.9" };
+        return InWindow(async (_, model) =>
+        {
+            await model.CheckForUpdateAsync();
+            model.RestartToUpdateCommand.Execute(null);
+            Assert.Equal(1, github.Restarts);
+        }, _folder, github);
+    }
 
     [Fact]
     public Task Every_screen_opens() => InWindow(async (_, model) =>

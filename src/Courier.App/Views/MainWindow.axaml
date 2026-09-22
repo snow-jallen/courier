@@ -4,7 +4,7 @@
         xmlns:views="using:Courier.App.Views"
         x:Class="Courier.App.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
-        Title="Courier" Width="1400" Height="900" MinWidth="1100" MinHeight="620"
+        Title="{Binding WindowTitle}" Width="1400" Height="900" MinWidth="1100" MinHeight="620"
         Icon="avares://Courier.App/courier-icon.png"
         Background="{DynamicResource Ground}">
 
@@ -70,6 +70,16 @@
                        Foreground="{DynamicResource Ink3}" TextWrapping="Wrap"/>
           </StackPanel>
         </Border>
+
+        <!-- Declared after the directory block so it docks above it: a DockPanel
+             stacks bottom-docked children outward in. Hidden until an update has
+             actually been downloaded, so the rail is otherwise unchanged. -->
+        <Button DockPanel.Dock="Bottom" Classes="primary"
+                Content="Restart to apply update"
+                IsVisible="{Binding UpdateReady}"
+                Command="{Binding RestartToUpdateCommand}"
+                HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                Margin="6,10,6,0"/>
 
         <StackPanel Spacing="2">
           <RadioButton Classes="nav" GroupName="nav" IsChecked="True" Content="Import"

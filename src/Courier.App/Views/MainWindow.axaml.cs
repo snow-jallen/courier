@@ -16,11 +16,16 @@ public partial class MainWindow : Window, IFilePicker, IClipboardWriter, IDataba
         AvaloniaXamlLoader.Load(this);
     }
 
-    public MainWindow(AppServices services) : this()
+    public MainWindow(AppServices services, IUpdates? updates = null) : this()
     {
-        _model = new MainWindowViewModel(services, this, this);
+        _model = new MainWindowViewModel(services, this, this, updates);
         DataContext = _model;
     }
+
+    /// <summary>Starts the background look for a newer Courier. Called by App rather
+    /// than from the constructor, so a window built directly — as the tests build it —
+    /// never reaches for the network unless the test asks it to.</summary>
+    public void StartUpdateCheck() => _ = _model?.CheckForUpdateAsync();
 
     public async Task<string?> PickPdfAsync()
     {

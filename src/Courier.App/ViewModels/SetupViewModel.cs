@@ -32,9 +32,11 @@ public sealed partial class SetupViewModel : ObservableObject
         bool? isMac = null,
         IDatabasePicker? databases = null,
         Action? databaseChanged = null,
-        IClipboardWriter? clipboard = null)
+        IClipboardWriter? clipboard = null,
+        IUpdates? updates = null)
     {
         _services = services;
+        _updates = updates ?? new UpdateService(UpdateService.DefaultRepository);
         _store = store;
         _databases = databases;
         _databaseChanged = databaseChanged;
@@ -68,7 +70,7 @@ public sealed partial class SetupViewModel : ObservableObject
     [ObservableProperty] private string _backupStatus = "";
 
     // --- updates ---------------------------------------------------------------------
-    private readonly UpdateService _updates = new(UpdateService.DefaultRepository);
+    private readonly IUpdates _updates;
 
     [ObservableProperty] private string _updateStatus = "";
     [ObservableProperty] private bool _updateBusy;

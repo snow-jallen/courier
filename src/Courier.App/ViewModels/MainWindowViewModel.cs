@@ -1,4 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using Courier.Core.Diagnostics;
 using Courier.Messaging.Settings;
 
@@ -11,6 +12,11 @@ public sealed partial class MainWindowViewModel : ObservableObject
     private readonly IClipboardWriter _clipboard;
     private readonly ISettingsStore _store;
 
+    /// <summary>Shared with the Setup screen rather than one each: the updater holds
+    /// the downloaded update in a field, so two of them would mean the rail fetches
+    /// something the Setup screen's restart button knows nothing about.</summary>
+    private readonly IUpdates _updates;
+
     private ImportViewModel _import = null!;
     private PeopleViewModel _people = null!;
     private SendViewModel _send = null!;
@@ -22,11 +28,52 @@ public sealed partial class MainWindowViewModel : ObservableObject
     [ObservableProperty] private string _databaseLabel;
     [ObservableProperty] private string _senderLabel;
 
-    public MainWindowViewModel(AppServices services, IFilePicker picker, IClipboardWriter clipboard)
+    /// <summary>The running version where a user can always see it, so "which version
+    /// are you on?" is answered by looking rather than by hunting through Setup.</summary>
+    public static string WindowTitle =>
+        UpdateService.CurrentVersion is "unknown"
+            ? "Courier"
+            : $"Courier (v{UpdateService.CurrentVersion})";
+
+    /// <summary>True once a newer Courier is downloaded and waiting. The rail shows a
+    /// restart button only then, so the rest of the time it looks exactly as it did.</summary>
+    [ObservableProperty] private bool _updateReady;
+
+    /// <summary>Looks for a newer Courier and fetches it in the background, leaving the
+    /// user nothing to do but restart when it suits them.
+    ///
+    /// Silent from end to end. Nobody asked for this, so a copy run from a build
+    /// folder, a machine that is offline, and a version that is already current all
+    /// look the same from the rail: nothing appears. Setup's own button still reports
+    /// every one of those out loud, because there the user did ask.</summary>
+    public async Task CheckForUpdateAsync()
+    {
+        try
+        {
+            if (!_updates.Installed) return;
+
+            var found = await _updates.CheckAsync();
+            if (found.Version is null) return;
+
+            var ready = await _updates.DownloadAsync();
+            UpdateReady = ready.UpdateReady;
+        }
+        catch (Exception failure)
+        {
+            Log.Failure("update.startup", failure);
+        }
+    }
+
+    [RelayCommand]
+    private void RestartToUpdate() => _updates.ApplyAndRestart();
+
+    public MainWindowViewModel(
+        AppServices services, IFilePicker picker, IClipboardWriter clipboard, IUpdates? updates = null)
     {
         _services = services;
         _picker = picker;
         _clipboard = clipboard;
+        _updates = updates ?? new UpdateService(UpdateService.DefaultRepository);
         _store = new SettingsStore(services.SettingsPath);
 
         Build();
@@ -51,7 +98,8 @@ public sealed partial class MainWindowViewModel : ObservableObject
             _services, _store,
             databases: _picker as IDatabasePicker,
             databaseChanged: OnDatabaseChanged,
-            clipboard: _clipboard);
+            clipboard: _clipboard,
+            updates: _updates);
     }
 
     private void OnDatabaseChanged()

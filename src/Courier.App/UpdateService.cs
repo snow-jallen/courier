@@ -6,11 +6,28 @@ namespace Courier.App;
 
 public sealed record UpdateState(string Message, bool UpdateReady = false, string? Version = null);
 
+/// <summary>What the app needs of the updater.
+///
+/// An interface so the start-up check can be driven from a test without reaching
+/// GitHub. A test that passed because the machine happened to be offline would prove
+/// nothing, and one that passed because it did reach GitHub would fail on the day a
+/// release went out.</summary>
+public interface IUpdates
+{
+    /// <summary>False for a copy run straight from a build folder, where there is no
+    /// Velopack package to replace.</summary>
+    bool Installed { get; }
+
+    Task<UpdateState> CheckAsync();
+    Task<UpdateState> DownloadAsync(IProgress<int>? progress = null);
+    void ApplyAndRestart();
+}
+
 /// <summary>Checks GitHub for a newer Courier and installs it.
 ///
 /// Only works in an app installed from a Velopack package — run from a build folder
 /// there is nothing to replace, and saying so is better than failing obscurely.</summary>
-public sealed class UpdateService(string repositoryUrl)
+public sealed class UpdateService(string repositoryUrl) : IUpdates
 {
     private UpdateManager? _manager;
     private UpdateInfo? _pending;
@@ -19,7 +36,17 @@ public sealed class UpdateService(string repositoryUrl)
     /// points at whichever repository actually carries the release assets.</summary>
     public const string DefaultRepository = "https://github.com/snow-jallen/courier";
 
-    public static string CurrentVersion => JsonlActivityLog.Version;
+    /// <summary>The running version the way the releases name it — 1.0.6, not the
+    /// four-part assembly form. Every use of this is read by a person; the activity
+    /// log keeps the full version, because there it is a machine record.</summary>
+    public static string CurrentVersion
+    {
+        get
+        {
+            var version = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Version;
+            return version is null ? "unknown" : $"{version.Major}.{version.Minor}.{version.Build}";
+        }
+    }
 
     public bool Installed
     {
