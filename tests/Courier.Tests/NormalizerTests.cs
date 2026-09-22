@@ -36,9 +36,22 @@ public sealed class NormalizerTests
     }
 
     [Theory]
+    [InlineData("9 Feb 1982", 2, 9)]
+    [InlineData("12 Nov 2008", 11, 12)]
+    public void Reads_a_full_birth_date_and_throws_the_year_away(string printed, int month, int day)
+    {
+        // The Member List prints the year on some rows and not others. Courier stores
+        // only the day and the month, and a date it could not read at all would be
+        // stored as no birthday — which, on a report that carries birthdays, clears
+        // the one already on record.
+        Assert.Equal((month, day), LcrNormalizer.ParseBirthday(printed));
+    }
+
+    [Theory]
     [InlineData("")]
     [InlineData("32 Jan")]
     [InlineData("17 Xyz")]
+    [InlineData("9 Feb 82")]
     public void Refuses_a_birthday_it_cannot_read(string printed)
     {
         Assert.Equal((null, null), LcrNormalizer.ParseBirthday(printed));

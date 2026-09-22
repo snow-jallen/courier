@@ -54,7 +54,11 @@ public static partial class LcrNormalizer
             RawUnit: row.Unit);
     }
 
-    /// <summary>The report prints a day and a month but never a year.</summary>
+    /// <summary>The report usually prints a day and a month and no year, and Courier
+    /// stores only those two. The Member List prints a full date with its year on some
+    /// rows and not others; the year is read and thrown away, because a birthday that
+    /// failed to parse would be stored as no birthday at all, and on a report that
+    /// carries birthdays that clears one already on record.</summary>
     public static (int? Month, int? Day) ParseBirthday(string? value)
     {
         var m = BirthdayPattern().Match(value ?? "");
@@ -87,6 +91,6 @@ public static partial class LcrNormalizer
 
     private static string? Blank(string? s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();
 
-    [GeneratedRegex(@"^\s*(\d{1,2})\s+([A-Za-z]{3})\s*$")]
+    [GeneratedRegex(@"^\s*(\d{1,2})\s+([A-Za-z]{3})(?:\s+\d{4})?\s*$")]
     private static partial Regex BirthdayPattern();
 }
