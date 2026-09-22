@@ -73,13 +73,19 @@
 
         <!-- Declared after the directory block so it docks above it: a DockPanel
              stacks bottom-docked children outward in. Hidden until an update has
-             actually been downloaded, so the rail is otherwise unchanged. -->
-        <Button DockPanel.Dock="Bottom" Classes="primary"
-                Content="Restart to apply update"
-                IsVisible="{Binding UpdateReady}"
-                Command="{Binding RestartToUpdateCommand}"
-                HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
-                Margin="6,10,6,0"/>
+             actually been downloaded, so the rail is otherwise unchanged.
+
+             Deliberately the plain button rather than the accent one: this is worth
+             noticing, not worth shouting over the directory it sits above. -->
+        <StackPanel DockPanel.Dock="Bottom" Spacing="4" Margin="6,10,6,0"
+                    IsVisible="{Binding UpdateReady}">
+          <Button Content="Restart to apply update"
+                  Command="{Binding RestartToUpdateCommand}"
+                  HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+          <TextBlock Text="{Binding UpdateCaption}" FontSize="10.5"
+                     Foreground="{DynamicResource Ink3}"
+                     HorizontalAlignment="Center" TextWrapping="Wrap"/>
+        </StackPanel>
 
         <StackPanel Spacing="2">
           <RadioButton Classes="nav" GroupName="nav" IsChecked="True" Content="Import"

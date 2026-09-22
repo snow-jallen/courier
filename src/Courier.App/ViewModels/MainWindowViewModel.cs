@@ -39,6 +39,11 @@ public sealed partial class MainWindowViewModel : ObservableObject
     /// restart button only then, so the rest of the time it looks exactly as it did.</summary>
     [ObservableProperty] private bool _updateReady;
 
+    /// <summary>What is waiting, under the restart button — knowing which version you
+    /// are about to install is worth a line of chrome. Composed here rather than in
+    /// the rail, because views do not compute.</summary>
+    [ObservableProperty] private string _updateCaption = "";
+
     /// <summary>Looks for a newer Courier and fetches it in the background, leaving the
     /// user nothing to do but restart when it suits them.
     ///
@@ -56,7 +61,10 @@ public sealed partial class MainWindowViewModel : ObservableObject
             if (found.Version is null) return;
 
             var ready = await _updates.DownloadAsync();
-            UpdateReady = ready.UpdateReady;
+            if (!ready.UpdateReady) return;
+
+            UpdateCaption = $"Version {ready.Version ?? found.Version} ready";
+            UpdateReady = true;
         }
         catch (Exception failure)
         {

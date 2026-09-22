@@ -66,6 +66,13 @@ public sealed class UserInterfaceTests : IDisposable
         public void ApplyAndRestart() => Restarts++;
     }
 
+    /// <summary>Whether a control would actually be on screen. A control's own
+    /// IsVisible says nothing about whether an ancestor is collapsed, so asserting on
+    /// it alone quietly passes for something nobody can see.</summary>
+    private static bool OnScreen(Visual control) =>
+        control is Control { IsVisible: true }
+        && control.GetVisualAncestors().OfType<Control>().All(a => a.IsVisible);
+
     private static readonly Lazy<HeadlessUnitTestSession> Session = new(() =>
         HeadlessUnitTestSession.StartNew(typeof(HeadlessApp)));
 
@@ -177,7 +184,26 @@ public sealed class UserInterfaceTests : IDisposable
             var button = Assert.Single(
                 window.GetVisualDescendants().OfType<Button>(),
                 b => b.Content as string == "Restart to apply update");
-            Assert.True(button.IsVisible);
+            Assert.True(OnScreen(button), "the restart button is in the tree but not on screen");
+        }, _folder, github);
+    }
+
+    [Fact]
+    public Task The_restart_button_says_which_version_is_waiting()
+    {
+        var github = new FakeUpdates { Offers = "1.0.9" };
+        return InWindow(async (window, model) =>
+        {
+            await model.CheckForUpdateAsync();
+
+            Dispatcher.UIThread.RunJobs();
+            window.Measure(window.ClientSize);
+            window.Arrange(new Rect(window.ClientSize));
+
+            // Knowing what you are about to install is worth a line of chrome.
+            Assert.Contains(
+                window.GetVisualDescendants().OfType<TextBlock>(),
+                t => t.Text == "Version 1.0.9 ready" && OnScreen(t));
         }, _folder, github);
     }
 
@@ -199,7 +225,7 @@ public sealed class UserInterfaceTests : IDisposable
 
             Assert.DoesNotContain(
                 window.GetVisualDescendants().OfType<Button>(),
-                b => b.Content as string == "Restart to apply update" && b.IsVisible);
+                b => b.Content as string == "Restart to apply update" && OnScreen(b));
         }, _folder, github);
     }
 
@@ -236,7 +262,7 @@ public sealed class UserInterfaceTests : IDisposable
 
             Assert.DoesNotContain(
                 window.GetVisualDescendants().OfType<Button>(),
-                b => b.Content as string == "Restart to apply update" && b.IsVisible);
+                b => b.Content as string == "Restart to apply update" && OnScreen(b));
         }, _folder, github);
     }
 
